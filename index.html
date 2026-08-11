@@ -1,0 +1,1465 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="description" content="AgriShield — AI-powered crop disease detection for rice, tomato, and potato. Upload a leaf image for instant disease analysis, severity estimation, and actionable farming guidance."/>
+<title>AgriShield — AI Crop Health Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+tailwind.config={theme:{extend:{colors:{agri:{50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',300:'#86efac',400:'#4ade80',500:'#22c55e',600:'#16a34a',700:'#15803d',800:'#166534',900:'#14532d',950:'#052e16'},surf:{DEFAULT:'#060d06',card:'#0d180d',border:'#1a2a1a',hover:'#122012'}},fontFamily:{sans:['Inter','system-ui','sans-serif']},animation:{'float':'float 6s ease-in-out infinite','float2':'float 7s ease-in-out 1.5s infinite','spin-slow':'spin 3s linear infinite','fade-in':'fadeIn .4s ease-out','slide-up':'slideUp .4s ease-out','scan':'scan 2.5s linear infinite'},keyframes:{float:{'0%,100%':{transform:'translateY(0)'},'50%':{transform:'translateY(-16px)'}},scan:{'0%':{transform:'translateY(-100%)'},'100%':{transform:'translateY(300%)'}},fadeIn:{from:{opacity:'0'},to:{opacity:'1'}},slideUp:{from:{opacity:'0',transform:'translateY(22px)'},to:{opacity:'1',transform:'translateY(0)'}}}}}}
+</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#060d06;color:#f0fdf4;font-family:'Inter',system-ui,sans-serif;min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:#060d06}::-webkit-scrollbar-thumb{background:#16a34a;border-radius:3px}
+.page{display:none}.page.active{display:block}
+.glass{background:rgba(13,24,13,0.8);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(34,197,94,0.12)}
+.glass-sm{background:rgba(13,24,13,0.6);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(34,197,94,0.1)}
+.glass-hover:hover{background:rgba(18,32,18,0.9);border-color:rgba(34,197,94,0.28);transform:translateY(-2px);box-shadow:0 8px 32px rgba(34,197,94,0.08)}
+.glass-hover{transition:all .3s ease}
+.glow{box-shadow:0 0 40px rgba(34,197,94,0.12)}
+.glow-sm{box-shadow:0 0 16px rgba(34,197,94,0.09)}
+.btn-p{background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;border:none;cursor:pointer;font-weight:600;transition:all .25s ease}
+.btn-p:hover{background:linear-gradient(135deg,#15803d,#16a34a);transform:translateY(-1px);box-shadow:0 8px 28px rgba(34,197,94,0.38)}
+.btn-p:active{transform:translateY(0)}
+.btn-o{background:transparent;border:1px solid rgba(34,197,94,0.35);color:#4ade80;cursor:pointer;font-weight:500;transition:all .25s ease}
+.btn-o:hover{background:rgba(34,197,94,0.09);border-color:#22c55e;transform:translateY(-1px)}
+.upload-zone{border:2px dashed rgba(34,197,94,0.28);background:rgba(13,24,13,0.4);cursor:pointer;transition:all .3s ease}
+.upload-zone:hover,.upload-zone.drag-over{border-color:#22c55e;background:rgba(34,197,94,0.05);box-shadow:0 0 32px rgba(34,197,94,0.1)}
+.tag{display:inline-flex;align-items:center;padding:3px 10px;border-radius:9999px;font-size:11px;font-weight:700;letter-spacing:.02em;gap:4px}
+.t-ok{background:rgba(34,197,94,0.14);color:#4ade80;border:1px solid rgba(34,197,94,0.32)}
+.t-bad{background:rgba(239,68,68,0.14);color:#f87171;border:1px solid rgba(239,68,68,0.32)}
+.t-warn{background:rgba(245,158,11,0.14);color:#fbbf24;border:1px solid rgba(245,158,11,0.32)}
+.t-demo{background:rgba(99,102,241,0.18);color:#a5b4fc;border:1px solid rgba(99,102,241,0.38)}
+.t-na{background:rgba(107,114,128,0.18);color:#9ca3af;border:1px solid rgba(107,114,128,0.28)}
+.t-trained{background:rgba(34,197,94,0.12);color:#86efac;border:1px solid rgba(34,197,94,0.22)}
+.nav-link{color:#9ca3af;font-size:14px;font-weight:500;padding:6px 12px;border-radius:8px;cursor:pointer;transition:all .2s ease;background:transparent;border:none}
+.nav-link:hover,.nav-link.active{color:#4ade80;background:rgba(34,197,94,0.09)}
+.rec-card{border-left:3px solid;padding:12px 16px;border-radius:8px;background:rgba(13,24,13,0.55)}
+.sev-bar{height:10px;border-radius:5px;background:#0d1a0d;overflow:hidden}
+.sev-fill{height:100%;border-radius:5px;transition:width 1.2s cubic-bezier(.34,1.56,.64,1)}
+.step-conn{height:2px;flex:1;background:rgba(34,197,94,0.18);transition:background .5s ease}
+.step-conn.done{background:#22c55e}
+.pstep .sico{width:36px;height:36px;border-radius:50%;border:2px solid rgba(34,197,94,0.2);background:rgba(13,24,13,0.8);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#6b7280;transition:all .4s ease}
+.pstep.active .sico{border-color:#22c55e;background:#22c55e;color:#fff;box-shadow:0 0 18px rgba(34,197,94,0.5)}
+.pstep.done .sico{border-color:#16a34a;background:#16a34a;color:#fff}
+.mobile-menu{display:none;position:absolute;top:100%;left:0;right:0;background:rgba(6,13,6,0.97);backdrop-filter:blur(20px);border-bottom:1px solid rgba(34,197,94,0.14);padding:10px 16px 16px}
+.mobile-menu.open{display:block}
+.hist-card{transition:all .2s ease;cursor:pointer}
+.hist-card:hover{background:rgba(18,32,18,0.9)!important;border-color:rgba(34,197,94,0.28)!important;transform:translateX(4px)}
+.hmap-canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:inherit;opacity:0;filter:blur(7px);transition:opacity .6s ease;pointer-events:none}
+.hmap-canvas.vis{opacity:1}
+.disc-box{border:1px solid rgba(245,158,11,0.28);background:rgba(245,158,11,0.05);border-radius:10px;padding:14px 18px}
+.feat-icon{width:50px;height:50px;border-radius:13px;display:flex;align-items:center;justify-content:center;background:rgba(34,197,94,0.09);border:1px solid rgba(34,197,94,0.18)}
+.chart-wrap{position:relative;height:280px}
+input[type=file]{display:none}
+.stat-n{font-size:2.8rem;font-weight:900;background:linear-gradient(135deg,#22c55e,#84cc16);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1}
+@media(max-width:768px){.stat-n{font-size:2rem}}
+</style>
+</head>
+<body>
+
+<!-- ██████ NAVBAR ██████ -->
+<nav id="navbar" class="fixed top-0 left-0 right-0 z-50 glass" style="border-top:none;border-left:none;border-right:none">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between relative">
+    <button onclick="nav('home')" class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded-lg flex items-center justify-center glow-sm" style="background:linear-gradient(135deg,#16a34a,#22c55e)">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>
+      </div>
+      <span class="text-lg font-bold text-white">Agri<span class="text-agri-400">Shield</span></span>
+    </button>
+    <div class="hidden md:flex items-center gap-1">
+      <button onclick="nav('home')" class="nav-link" data-page="home">Home</button>
+      <button onclick="nav('analyze')" class="nav-link" data-page="analyze">Analyze</button>
+      <button onclick="nav('history')" class="nav-link" data-page="history">History</button>
+      <button onclick="nav('crops')" class="nav-link" data-page="crops">Supported Crops</button>
+      <button onclick="nav('datasets')" class="nav-link" data-page="datasets">Datasets</button>
+    </div>
+    <button onclick="nav('analyze')" class="hidden md:flex btn-p px-5 py-2.5 rounded-xl text-sm items-center gap-2">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>Analyze a Leaf
+    </button>
+    <button onclick="toggleMenu()" class="md:hidden p-2 rounded-lg text-gray-400 hover:text-white">
+      <svg id="menu-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+    </button>
+    <div class="mobile-menu" id="mobile-menu">
+      <div class="flex flex-col gap-1">
+        <button onclick="nav('home');toggleMenu()" class="nav-link text-left w-full">Home</button>
+        <button onclick="nav('analyze');toggleMenu()" class="nav-link text-left w-full">Analyze</button>
+        <button onclick="nav('history');toggleMenu()" class="nav-link text-left w-full">History</button>
+        <button onclick="nav('crops');toggleMenu()" class="nav-link text-left w-full">Supported Crops</button>
+        <button onclick="nav('datasets');toggleMenu()" class="nav-link text-left w-full">Datasets</button>
+        <button onclick="nav('analyze');toggleMenu()" class="btn-p w-full py-2.5 rounded-xl text-sm mt-2">Analyze a Leaf →</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ██████ PAGES ██████ -->
+<div id="pages" class="pt-16">
+
+<!-- ════════════════════════════════════
+     HOME
+════════════════════════════════════ -->
+<section id="page-home" class="page active">
+
+  <!-- Hero -->
+  <div class="relative min-h-[92vh] flex items-center overflow-hidden">
+    <div class="absolute inset-0 pointer-events-none">
+      <div style="position:absolute;inset:0;background:radial-gradient(ellipse 90% 65% at 50% -5%,rgba(34,197,94,0.09),transparent)"></div>
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(34,197,94,0.035) 1px,transparent 1px),linear-gradient(90deg,rgba(34,197,94,0.035) 1px,transparent 1px);background-size:55px 55px"></div>
+      <div class="animate-float" style="position:absolute;width:360px;height:360px;top:8%;left:2%;border-radius:50%;background:radial-gradient(circle,rgba(34,197,94,0.07),transparent);pointer-events:none"></div>
+      <div class="animate-float2" style="position:absolute;width:220px;height:220px;top:55%;right:4%;border-radius:50%;background:radial-gradient(circle,rgba(132,204,22,0.06),transparent);pointer-events:none"></div>
+    </div>
+
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 py-20 w-full">
+      <div class="max-w-3xl">
+        <div class="flex items-center gap-3 mb-5">
+          <span class="tag t-demo">⚗️ DEMO MODE — Mock Inference Active</span>
+          <span class="text-xs text-gray-600">v1.0.0-hackathon</span>
+        </div>
+        <h1 class="font-black leading-tight mb-5" style="font-size:clamp(2.4rem,5vw,3.8rem);line-height:1.08">
+          Detect Crop Disease<br/>
+          <span style="background:linear-gradient(135deg,#22c55e,#84cc16);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Before It Spreads</span>
+        </h1>
+        <p class="text-lg text-gray-400 mb-8 max-w-xl leading-relaxed">
+          Upload a leaf photo from your <strong class="text-gray-200">rice, tomato, or potato</strong> crop. AgriShield identifies the disease, estimates severity, explains what the AI saw, and gives you actionable guidance — in seconds.
+        </p>
+        <div class="flex flex-wrap gap-3 mb-9">
+          <button onclick="nav('analyze')" class="btn-p px-8 py-3.5 rounded-xl text-base flex items-center gap-2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>Analyze a Leaf
+          </button>
+          <button onclick="nav('crops')" class="btn-o px-7 py-3.5 rounded-xl text-base">View Supported Crops</button>
+        </div>
+        <div class="flex flex-wrap gap-5 text-sm text-gray-500">
+          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-agri-500"></span>3 Crops</span>
+          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-agri-500"></span>11 Disease Classes</span>
+          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-agri-500"></span>5 Datasets</span>
+          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-yellow-500"></span>Demo / Mock Mode</span>
+        </div>
+      </div>
+
+      <!-- Floating sample card -->
+      <div class="animate-float hidden xl:block" style="position:absolute;right:2rem;top:50%;transform:translateY(-50%);animation-delay:1s">
+        <div class="glass rounded-2xl p-5 w-72 glow">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-semibold text-gray-300">Sample Result</span>
+            <span class="tag t-bad">Disease Detected</span>
+          </div>
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style="background:rgba(22,163,74,0.12)">🌾</div>
+            <div><div class="font-bold text-white">Rice — Leaf Blast</div><div class="text-xs text-gray-500 italic">Magnaporthe oryzae</div></div>
+          </div>
+          <div class="space-y-2.5">
+            <div>
+              <div class="flex justify-between text-xs text-gray-500 mb-1"><span>Confidence</span><span class="text-agri-400 font-semibold">87%</span></div>
+              <div class="sev-bar"><div class="sev-fill" style="width:87%;background:linear-gradient(90deg,#16a34a,#22c55e)"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between text-xs text-gray-500 mb-1"><span>Severity</span><span class="text-yellow-400 font-semibold">Moderate — 18.4%</span></div>
+              <div class="sev-bar"><div class="sev-fill" style="width:18.4%;background:#f59e0b"></div></div>
+            </div>
+          </div>
+          <div class="mt-4 flex items-center gap-2 text-xs text-indigo-400 p-2 rounded-lg" style="background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.2)">
+            <span>🧪</span><span>Demo Data — Not real prediction</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 pb-16">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-5">
+      <div class="glass glass-hover rounded-2xl p-6 text-center glow-sm"><div class="stat-n mb-1">3</div><div class="text-gray-400 text-sm font-medium">Supported Crops</div></div>
+      <div class="glass glass-hover rounded-2xl p-6 text-center glow-sm"><div class="stat-n mb-1">11</div><div class="text-gray-400 text-sm font-medium">Disease Classes</div></div>
+      <div class="glass glass-hover rounded-2xl p-6 text-center glow-sm"><div class="stat-n mb-1">5</div><div class="text-gray-400 text-sm font-medium">Datasets Referenced</div></div>
+      <div class="glass glass-hover rounded-2xl p-6 text-center glow-sm"><div class="stat-n mb-1">6</div><div class="text-gray-400 text-sm font-medium">Analysis Steps</div></div>
+    </div>
+  </div>
+
+  <!-- Features -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 pb-20">
+    <div class="text-center mb-12">
+      <h2 class="text-3xl font-bold text-white mb-3">More Than Just a Disease Detector</h2>
+      <p class="text-gray-400 max-w-xl mx-auto">Most tools stop at identifying the disease. AgriShield goes further — it explains, quantifies, tracks, and guides.</p>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div class="glass glass-hover rounded-2xl p-6">
+        <div class="feat-icon mb-4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></div>
+        <h3 class="font-bold text-white mb-2">Disease Classification</h3>
+        <p class="text-gray-400 text-sm leading-relaxed">EfficientNet-B0 trained on Paddy Doctor &amp; PlantVillage. Identifies 11 disease conditions across 3 crops with crop-type detection.</p>
+      </div>
+      <div class="glass glass-hover rounded-2xl p-6">
+        <div class="feat-icon mb-4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><path d="M2 12h20M12 2v20"/><circle cx="12" cy="12" r="3"/></svg></div>
+        <h3 class="font-bold text-white mb-2">Grad-CAM Heatmap</h3>
+        <p class="text-gray-400 text-sm leading-relaxed">Visual explanation of which leaf regions influenced the prediction. Builds farmer trust through transparent, explainable AI.</p>
+      </div>
+      <div class="glass glass-hover rounded-2xl p-6">
+        <div class="feat-icon mb-4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+        <h3 class="font-bold text-white mb-2">Severity Estimation</h3>
+        <p class="text-gray-400 text-sm leading-relaxed">For rice diseases: U-Net segmentation estimates lesion coverage as % of leaf area. 6-tier scale from Mild to Critical.</p>
+      </div>
+      <div class="glass glass-hover rounded-2xl p-6">
+        <div class="feat-icon mb-4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg></div>
+        <h3 class="font-bold text-white mb-2">Health Progression</h3>
+        <p class="text-gray-400 text-sm leading-relaxed">Track crop health across multiple scans over time. Spot worsening conditions early with interactive Chart.js progression graphs.</p>
+      </div>
+      <div class="glass glass-hover rounded-2xl p-6">
+        <div class="feat-icon mb-4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+        <h3 class="font-bold text-white mb-2">Severity-Aware Guidance</h3>
+        <p class="text-gray-400 text-sm leading-relaxed">Recommendations calibrated to severity level. No pesticide advice without expert sign-off. Safe, honest, and practical steps only.</p>
+      </div>
+      <div class="glass glass-hover rounded-2xl p-6">
+        <div class="feat-icon mb-4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <h3 class="font-bold text-white mb-2">Transparent &amp; Honest</h3>
+        <p class="text-gray-400 text-sm leading-relaxed">Low-confidence predictions flagged explicitly. Unsupported crops trigger "Unable to identify." No misleading claims. Ever.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- How It Works -->
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 pb-20">
+    <div class="text-center mb-12">
+      <h2 class="text-3xl font-bold text-white mb-3">How AgriShield Works</h2>
+      <p class="text-gray-400">From photo to prescription in under 10 seconds.</p>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div class="text-center">
+        <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl" style="background:rgba(22,163,74,0.1);border:1px solid rgba(34,197,94,0.22)">📷</div>
+        <div class="text-agri-400 text-xs font-bold mb-2 uppercase tracking-widest">Step 1</div>
+        <h3 class="font-bold text-white mb-2">Upload or Capture</h3>
+        <p class="text-gray-400 text-sm">Drag &amp; drop or use camera. Automatic blur detection, resolution checks, and leaf presence validation.</p>
+      </div>
+      <div class="text-center">
+        <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl" style="background:rgba(22,163,74,0.1);border:1px solid rgba(34,197,94,0.22)">🔬</div>
+        <div class="text-agri-400 text-xs font-bold mb-2 uppercase tracking-widest">Step 2</div>
+        <h3 class="font-bold text-white mb-2">AI Analysis</h3>
+        <p class="text-gray-400 text-sm">EfficientNet-B0 classifies the disease. U-Net segments lesions. Grad-CAM generates the heatmap explanation.</p>
+      </div>
+      <div class="text-center">
+        <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl" style="background:rgba(22,163,74,0.1);border:1px solid rgba(34,197,94,0.22)">📊</div>
+        <div class="text-agri-400 text-xs font-bold mb-2 uppercase tracking-widest">Step 3</div>
+        <h3 class="font-bold text-white mb-2">Results &amp; Guidance</h3>
+        <p class="text-gray-400 text-sm">View severity, confidence, and heatmap. Get actionable recommendations and save to history for tracking.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA Banner -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 pb-20">
+    <div class="glass rounded-3xl p-12 text-center glow" style="background:linear-gradient(135deg,rgba(22,163,74,0.1),rgba(13,24,13,0.85));border-color:rgba(34,197,94,0.22)">
+      <div class="text-5xl mb-5">🌱</div>
+      <h2 class="text-3xl font-bold text-white mb-3">Ready to Protect Your Crop?</h2>
+      <p class="text-gray-400 mb-7 max-w-md mx-auto">Upload a leaf image and get a disease analysis in seconds. Free, instant, and transparent.</p>
+      <button onclick="nav('analyze')" class="btn-p px-10 py-4 rounded-xl text-base">Start Free Analysis →</button>
+      <div class="mt-5 text-xs text-gray-600">⚠️ AgriShield is a decision-support tool. Always consult a qualified agricultural expert before treatment.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════
+     ANALYZE
+════════════════════════════════════ -->
+<section id="page-analyze" class="page">
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 py-12">
+    <div class="mb-8">
+      <button onclick="nav('home')" class="text-sm text-gray-500 hover:text-agri-400 flex items-center gap-1 mb-3 transition-colors">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,18 9,12 15,6"/></svg>Back to Home
+      </button>
+      <h1 class="text-3xl font-bold text-white mb-2">Analyze a Leaf</h1>
+      <p class="text-gray-400">Upload a clear photo of a single leaf. Supported: Rice, Tomato, Potato.</p>
+    </div>
+
+    <!-- Upload zone -->
+    <div id="upload-section">
+      <div id="drop-zone" class="upload-zone rounded-2xl p-12 text-center mb-5"
+        onclick="document.getElementById('file-in').click()"
+        ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+        <input type="file" id="file-in" accept="image/jpeg,image/png,image/webp" onchange="onFileSelect(event)">
+        <div class="flex flex-col items-center gap-4">
+          <div class="w-20 h-20 rounded-2xl flex items-center justify-center" style="background:rgba(22,163,74,0.09);border:1px solid rgba(34,197,94,0.22)">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          </div>
+          <div>
+            <p class="text-white font-semibold text-lg mb-1">Drop your leaf image here</p>
+            <p class="text-gray-500 text-sm">or click to browse files</p>
+          </div>
+          <div class="flex flex-wrap justify-center gap-3 text-xs text-gray-500">
+            <span class="flex items-center gap-1"><span class="text-agri-400">✓</span>JPG / PNG / WebP</span>
+            <span class="flex items-center gap-1"><span class="text-agri-400">✓</span>Max 10 MB</span>
+            <span class="flex items-center gap-1"><span class="text-agri-400">✓</span>Min 300 × 300 px</span>
+            <span class="flex items-center gap-1"><span class="text-agri-400">✓</span>Clear, well-lit photo</span>
+          </div>
+        </div>
+      </div>
+      <div class="flex gap-3 justify-center mb-6">
+        <button onclick="openCam()" class="btn-o px-6 py-2.5 rounded-xl text-sm flex items-center gap-2">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Use Camera
+        </button>
+        <button onclick="loadSample()" class="btn-o px-6 py-2.5 rounded-xl text-sm flex items-center gap-2">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>Try Sample Image
+        </button>
+      </div>
+      <div id="val-display" class="hidden glass-sm rounded-xl p-4 mb-5">
+        <div class="text-sm font-medium text-gray-300 mb-3">Image Validation</div>
+        <div id="val-steps" class="space-y-2"></div>
+      </div>
+    </div>
+
+    <!-- Preview section -->
+    <div id="preview-section" class="hidden">
+      <div class="glass rounded-2xl p-5 mb-5">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold text-white text-sm">Image Preview</h3>
+          <div class="flex items-center gap-3">
+            <span id="val-badge" class="tag text-xs"></span>
+            <button onclick="resetUpload()" class="text-xs text-gray-500 hover:text-red-400 flex items-center gap-1 transition-colors">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Remove
+            </button>
+          </div>
+        </div>
+        <div class="relative rounded-xl overflow-hidden bg-black flex items-center justify-center" style="aspect-ratio:4/3;max-height:320px">
+          <img id="prev-img" class="max-h-80 max-w-full object-contain rounded-xl" alt="Leaf preview"/>
+        </div>
+        <div id="img-meta" class="flex gap-4 mt-3 text-xs text-gray-500"></div>
+      </div>
+      <div id="val-err-box" class="hidden mb-5 p-4 rounded-xl" style="border:1px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.05)">
+        <div class="text-red-400 font-medium mb-1">Validation Failed</div>
+        <div id="val-err-msg" class="text-sm text-red-300"></div>
+      </div>
+      <button id="analyze-btn" onclick="startAnalysis()" class="btn-p w-full py-4 rounded-xl text-base flex items-center justify-center gap-2" disabled style="opacity:.5;cursor:not-allowed">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>Analyze Image
+      </button>
+      <div class="text-center mt-3 text-xs text-gray-500">Demo mode: results are simulated and labeled as demo data. Not real AI predictions.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════
+     RESULTS
+════════════════════════════════════ -->
+<section id="page-results" class="page">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 py-12">
+    <div class="flex items-center gap-3 mb-8 text-sm text-gray-500">
+      <button onclick="nav('analyze')" class="hover:text-agri-400 flex items-center gap-1 transition-colors"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,18 9,12 15,6"/></svg>Analyze Another</button>
+      <span class="text-gray-700">|</span>
+      <button onclick="nav('history')" class="hover:text-agri-400 transition-colors">View History</button>
+    </div>
+    <div id="results-content"><!-- Populated by JS --></div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════
+     HISTORY
+════════════════════════════════════ -->
+<section id="page-history" class="page">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 py-12">
+    <div class="flex items-center justify-between mb-8">
+      <div><h1 class="text-3xl font-bold text-white mb-1">Scan History</h1><p class="text-gray-400 text-sm">Track your crop health over time.</p></div>
+      <div class="flex gap-3">
+        <button onclick="clearHistory()" class="btn-o px-4 py-2 rounded-lg text-sm" style="color:#f87171;border-color:rgba(239,68,68,0.3)">Clear All</button>
+        <button onclick="nav('analyze')" class="btn-p px-5 py-2 rounded-lg text-sm">+ New Scan</button>
+      </div>
+    </div>
+    <div class="flex gap-2 mb-6 flex-wrap" id="hist-filters">
+      <button onclick="filterHist('all')" class="filt-btn btn-p px-4 py-2 rounded-lg text-sm" data-f="all">All</button>
+      <button onclick="filterHist('rice')" class="filt-btn btn-o px-4 py-2 rounded-lg text-sm" data-f="rice">🌾 Rice</button>
+      <button onclick="filterHist('tomato')" class="filt-btn btn-o px-4 py-2 rounded-lg text-sm" data-f="tomato">🍅 Tomato</button>
+      <button onclick="filterHist('potato')" class="filt-btn btn-o px-4 py-2 rounded-lg text-sm" data-f="potato">🥔 Potato</button>
+    </div>
+    <div id="hist-chart-wrap" class="glass rounded-2xl p-5 mb-6 hidden">
+      <h3 class="font-semibold text-white mb-4">Rice Severity Progression</h3>
+      <div class="chart-wrap"><canvas id="hist-chart"></canvas></div>
+      <div class="text-xs text-gray-500 mt-2">Only rice scans with severity estimation are plotted.</div>
+    </div>
+    <div id="hist-list"><!-- Populated by JS --></div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════
+     SUPPORTED CROPS
+════════════════════════════════════ -->
+<section id="page-crops" class="page">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 py-12">
+    <div class="mb-10">
+      <h1 class="text-3xl font-bold text-white mb-2">Supported Crops &amp; Diseases</h1>
+      <p class="text-gray-400">AgriShield v1.0 covers the crops and conditions listed below. More will be added in future releases.</p>
+    </div>
+
+    <!-- Rice -->
+    <div class="glass rounded-2xl overflow-hidden mb-5">
+      <div class="px-6 py-4 border-b border-surf-border flex items-center gap-3" style="border-bottom-color:rgba(26,42,26,1)">
+        <span class="text-2xl">🌾</span>
+        <div><h2 class="font-bold text-white">Rice / Paddy</h2><div class="text-xs text-gray-500 mt-0.5">Primary crop — Paddy Doctor dataset (India-focused)</div></div>
+        <span class="ml-auto tag t-trained">Primary Crop</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead><tr class="text-gray-500 text-xs uppercase tracking-wider" style="border-bottom:1px solid rgba(26,42,26,1)"><th class="px-6 py-3 text-left">Condition</th><th class="px-6 py-3 text-left">Severity Estimation</th><th class="px-6 py-3 text-left">Training Status</th><th class="px-6 py-3 text-left">Annotation</th></tr></thead>
+          <tbody>
+            <tr style="border-bottom:1px solid rgba(26,42,26,.7)" class="hover:bg-[rgba(18,32,18,0.5)]"><td class="px-6 py-3 text-white font-medium">Healthy</td><td class="px-6 py-3"><span class="tag t-na">N/A</span></td><td class="px-6 py-3"><span class="tag t-trained">Trained</span></td><td class="px-6 py-3 text-gray-500">Classification label</td></tr>
+            <tr style="border-bottom:1px solid rgba(26,42,26,.7)" class="hover:bg-[rgba(18,32,18,0.5)]"><td class="px-6 py-3 text-white font-medium">Bacterial Leaf Blight</td><td class="px-6 py-3"><span class="tag t-ok">✓ Available</span></td><td class="px-6 py-3"><span class="tag t-trained">Trained</span></td><td class="px-6 py-3 text-gray-500">Lesion mask</td></tr>
+            <tr style="border-bottom:1px solid rgba(26,42,26,.7)" class="hover:bg-[rgba(18,32,18,0.5)]"><td class="px-6 py-3 text-white font-medium">Brown Spot</td><td class="px-6 py-3"><span class="tag t-ok">✓ Available</span></td><td class="px-6 py-3"><span class="tag t-trained">Trained</span></td><td class="px-6 py-3 text-gray-500">Lesion mask</td></tr>
+            <tr style="border-bottom:1px solid rgba(26,42,26,.7)" class="hover:bg-[rgba(18,32,18,0.5)]"><td class="px-6 py-3 text-white font-medium">Leaf Blast</td><td class="px-6 py-3"><span class="tag t-ok">✓ Available</span></td><td class="px-6 py-3"><span class="tag t-trained">Trained</span></td><td class="px-6 py-3 text-gray-500">Segmentation mask (PMC)</td></tr>
+            <tr class="hover:bg-[rgba(18,32,18,0.5)]"><td class="px-6 py-3 text-white font-medium">Sheath Blight</td><td class="px-6 py-3"><span class="tag t-warn">Conditional</span></td><td class="px-6 py-3"><span class="tag t-warn">Validation Only</span></td><td class="px-6 py-3 text-gray-500">Only if sufficient annotated data</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tomato -->
+    <div class="glass rounded-2xl overflow-hidden mb-5">
+      <div class="px-6 py-4 border-b border-surf-border flex items-center gap-3" style="border-bottom-color:rgba(26,42,26,1)">
+        <span class="text-2xl">🍅</span>
+        <div><h2 class="font-bold text-white">Tomato</h2><div class="text-xs text-gray-500 mt-0.5">Secondary crop — PlantVillage (color) + PlantDoc validation</div></div>
+        <span class="ml-auto tag t-na">Secondary Crop</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead><tr class="text-gray-500 text-xs uppercase tracking-wider" style="border-bottom:1px solid rgba(26,42,26,1)"><th class="px-6 py-3 text-left">Condition</th><th class="px-6 py-3 text-left">Severity Estimation</th><th class="px-6 py-3 text-left">Training Status</th><th class="px-6 py-3 text-left">Note</th></tr></thead>
+          <tbody>
+            <tr style="border-bottom:1px solid rgba(26,42,26,.7)" class="hover:bg-[rgba(18,32,18,0.5)]"><td class="px-6 py-3 text-white font-medium">Healthy</td><td class="px-6 py-3"><span class="tag t-na">Unavailable</span></td><td class="px-6 py-3"><span class="tag t-trained">Trained</span></td><td class="px-6 py-3 text-gray-500">—</td></tr>
+            <tr style="border-bottom:1px solid rgba(26,42,26,.7)" class="hover:bg-[rgba(18,32,18,0.5)]"><td class="px-6 py-3 text-white font-medium">Early Blight</td><td class="px-6 py-3"><span class="tag t-na">Unavailable</span></td><td class="px-6 py-3"><span class="tag t-trained">Trained</span></td><td class="px-6 py-3 text-gray-500">No lesion masks</td></tr>
+            <tr style="border-bottom:1px solid rgba(26,42,26,.7)" class="hover:bg-[rgba(18,32,18,0.5)]"><td class="px-6 py-3 text-white font-medium">Late Blight</td><td class="px-6 py-3"><span class="tag t-na">Unavailable</span></td><td class="px-6 py-3"><span class="tag t-trained">Trained</span></td><td class="px-6 py-3 text-gray-500">No lesion masks</td></tr>
+            <tr style="border-bottom:1px solid rgba(26,42,26,.7)" class="hover:bg-[rgba(18,32,18,0.5)]"><td class="px-6 py-3 text-white font-medium">Bacterial Spot</td><td class="px-6 py-3"><span class="tag t-na">Unavailable</span></td><td class="px-6 py-3"><span class="tag t-trained">Trained</span></td><td class="px-6 py-3 text-gray-500">No lesion masks</td></tr>
+            <tr class="hover:bg-[rgba(18,32,18,0.5)]"><td class="px-6 py-3 text-white font-medium">Leaf Mold</td><td class="px-6 py-3"><span class="tag t-na">Unavailable</span></td><td class="px-6 py-3"><span class="tag t-warn">Conditional</span></td><td class="px-6 py-3 text-gray-500">Only if sufficient data</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Potato -->
+    <div class="glass rounded-2xl overflow-hidden mb-8">
+      <div class="px-6 py-4 border-b border-surf-border flex items-center gap-3" style="border-bottom-color:rgba(26,42,26,1)">
+        <span class="text-2xl">🥔</span>
+        <div><h2 class="font-bold text-white">Potato</h2><div class="text-xs text-gray-500 mt-0.5">Secondary crop — PlantVillage dataset</div></div>
+        <span class="ml-auto tag t-na">Secondary Crop</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead><tr class="text-gray-500 text-xs uppercase tracking-wider" style="border-bottom:1px solid rgba(26,42,26,1)"><th class="px-6 py-3 text-left">Condition</th><th class="px-6 py-3 text-left">Severity Estimation</th><th class="px-6 py-3 text-left">Training Status</th><th class="px-6 py-3 text-left">Note</th></tr></thead>
+          <tbody>
+            <tr style="border-bottom:1px solid rgba(26,42,26,.7)" class="hover:bg-[rgba(18,32,18,0.5)]"><td class="px-6 py-3 text-white font-medium">Healthy</td><td class="px-6 py-3"><span class="tag t-na">Unavailable</span></td><td class="px-6 py-3"><span class="tag t-trained">Trained</span></td><td class="px-6 py-3 text-gray-500">—</td></tr>
+            <tr style="border-bottom:1px solid rgba(26,42,26,.7)" class="hover:bg-[rgba(18,32,18,0.5)]"><td class="px-6 py-3 text-white font-medium">Early Blight</td><td class="px-6 py-3"><span class="tag t-na">Unavailable</span></td><td class="px-6 py-3"><span class="tag t-trained">Trained</span></td><td class="px-6 py-3 text-gray-500">No lesion masks</td></tr>
+            <tr class="hover:bg-[rgba(18,32,18,0.5)]"><td class="px-6 py-3 text-white font-medium">Late Blight</td><td class="px-6 py-3"><span class="tag t-na">Unavailable</span></td><td class="px-6 py-3"><span class="tag t-trained">Trained</span></td><td class="px-6 py-3 text-gray-500">No lesion masks</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="disc-box">
+      <div class="flex items-start gap-3">
+        <span class="text-yellow-400 text-lg mt-0.5">⚠️</span>
+        <div>
+          <div class="font-semibold text-yellow-300 mb-1">Decision Support Tool</div>
+          <div class="text-sm text-yellow-200/70">AgriShield provides AI-assisted crop health analysis. Results may be incorrect and should be confirmed by a qualified agricultural expert before treatment decisions are made.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════
+     DATASETS
+════════════════════════════════════ -->
+<section id="page-datasets" class="page">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 py-12">
+    <div class="mb-10">
+      <h1 class="text-3xl font-bold text-white mb-2">Datasets &amp; Model Architecture</h1>
+      <p class="text-gray-400">Full transparency on training data, model choices, and known limitations.</p>
+    </div>
+
+    <!-- Model cards -->
+    <div class="glass rounded-2xl p-6 mb-8">
+      <h2 class="font-bold text-white mb-4 text-lg">Model Architecture</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div class="rounded-xl p-4" style="background:rgba(18,32,18,0.7);border:1px solid rgba(26,42,26,1)">
+          <div class="text-agri-400 text-xs font-bold uppercase tracking-wider mb-1.5">Classifier</div>
+          <div class="font-semibold text-white mb-1">EfficientNet-B0</div>
+          <div class="text-xs text-gray-500 mb-3">Primary classification. MobileNetV3 as lightweight fallback.</div>
+          <span class="tag t-demo text-xs">PyTorch / Keras</span>
+        </div>
+        <div class="rounded-xl p-4" style="background:rgba(18,32,18,0.7);border:1px solid rgba(26,42,26,1)">
+          <div class="text-agri-400 text-xs font-bold uppercase tracking-wider mb-1.5">Segmentation</div>
+          <div class="font-semibold text-white mb-1">U-Net (Lightweight)</div>
+          <div class="text-xs text-gray-500 mb-3">Rice lesion segmentation only. DeepLabV3+ as alternative.</div>
+          <span class="tag t-warn text-xs">Rice Only</span>
+        </div>
+        <div class="rounded-xl p-4" style="background:rgba(18,32,18,0.7);border:1px solid rgba(26,42,26,1)">
+          <div class="text-agri-400 text-xs font-bold uppercase tracking-wider mb-1.5">Explainability</div>
+          <div class="font-semibold text-white mb-1">Grad-CAM</div>
+          <div class="text-xs text-gray-500 mb-3">Gradient-weighted Class Activation Maps from EfficientNet-B0 final conv layer.</div>
+          <span class="tag" style="background:rgba(168,85,247,0.14);color:#c4b5fd;border:1px solid rgba(168,85,247,0.3)" class="text-xs">Visual XAI</span>
+        </div>
+      </div>
+      <div class="p-4 rounded-xl text-sm text-gray-400" style="border:1px solid rgba(26,42,26,1);background:rgba(13,24,13,0.4)">
+        <strong class="text-gray-200">Current status:</strong> All inference uses a <span class="text-yellow-400 font-semibold">mock pipeline</span>. Results are simulated and do not reflect real model output. The architecture is ready for real model integration via <code class="text-agri-400 px-1.5 py-0.5 rounded text-xs" style="background:rgba(18,32,18,0.8)">INFERENCE_MODE=real</code>.
+      </div>
+    </div>
+
+    <!-- Datasets -->
+    <h2 class="font-bold text-white mb-5 text-lg">Training &amp; Validation Datasets</h2>
+    <div class="space-y-4 mb-8">
+
+      <div class="glass glass-hover rounded-2xl p-5" style="border-top:3px solid #16a34a">
+        <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
+          <div><h3 class="font-bold text-white text-base">Paddy Doctor</h3><a href="https://paddydoc.github.io/dataset/" target="_blank" rel="noopener" class="text-agri-400 text-sm hover:underline">paddydoc.github.io ↗</a></div>
+          <span class="tag t-trained">Primary Training</span>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-3">
+          <div><div class="text-gray-500 text-xs mb-0.5">Crop</div><div class="text-gray-200">Rice / Paddy</div></div>
+          <div><div class="text-gray-500 text-xs mb-0.5">Purpose</div><div class="text-gray-200">Classification</div></div>
+          <div><div class="text-gray-500 text-xs mb-0.5">Focus</div><div class="text-gray-200">India field images</div></div>
+          <div><div class="text-gray-500 text-xs mb-0.5">License</div><div class="text-gray-200">CC BY 4.0</div></div>
+        </div>
+        <div class="text-xs text-gray-500">Pest and disease labels kept strictly separate. All labels normalized before training. Original dataset source recorded per image.</div>
+      </div>
+
+      <div class="glass glass-hover rounded-2xl p-5" style="border-top:3px solid #3b82f6">
+        <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
+          <div><h3 class="font-bold text-white text-base">PlantVillage</h3><a href="https://github.com/spMohanty/PlantVillage-Dataset" target="_blank" rel="noopener" class="text-blue-400 text-sm hover:underline">github.com/spMohanty/PlantVillage-Dataset ↗</a></div>
+          <span class="tag" style="background:rgba(59,130,246,0.14);color:#93c5fd;border:1px solid rgba(59,130,246,0.3)">Primary Training</span>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-3">
+          <div><div class="text-gray-500 text-xs mb-0.5">Crops</div><div class="text-gray-200">Tomato, Potato</div></div>
+          <div><div class="text-gray-500 text-xs mb-0.5">Classes Used</div><div class="text-gray-200">7 of 38</div></div>
+          <div><div class="text-gray-500 text-xs mb-0.5">Image Type</div><div class="text-gray-200">Color (studio)</div></div>
+          <div><div class="text-gray-500 text-xs mb-0.5">License</div><div class="text-gray-200">CC0 / Public Domain</div></div>
+        </div>
+        <div class="text-xs text-gray-500">Only 7 selected classes used. Color directory only (not segmented). Resized to 224×224 with class balancing and safe augmentation.</div>
+      </div>
+
+      <div class="glass glass-hover rounded-2xl p-5" style="border-top:3px solid #f59e0b">
+        <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
+          <div><h3 class="font-bold text-white text-base">PlantDoc</h3><a href="https://github.com/pratikkayal/PlantDoc-Dataset" target="_blank" rel="noopener" class="text-yellow-400 text-sm hover:underline">github.com/pratikkayal/PlantDoc-Dataset ↗</a></div>
+          <span class="tag t-warn">External Validation</span>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-3">
+          <div><div class="text-gray-500 text-xs mb-0.5">Crops</div><div class="text-gray-200">Multi-crop</div></div>
+          <div><div class="text-gray-500 text-xs mb-0.5">Purpose</div><div class="text-gray-200">Real-world val.</div></div>
+          <div><div class="text-gray-500 text-xs mb-0.5">Background</div><div class="text-gray-200">Natural scenes</div></div>
+          <div><div class="text-gray-500 text-xs mb-0.5">License</div><div class="text-gray-200">Research only</div></div>
+        </div>
+        <div class="text-xs text-gray-500">External validation only. Tests generalization beyond controlled PlantVillage conditions. Label normalization required before optional fine-tuning.</div>
+      </div>
+
+      <div class="glass glass-hover rounded-2xl p-5" style="border-top:3px solid #8b5cf6">
+        <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
+          <div><h3 class="font-bold text-white text-base">ICAR Rice &amp; Maize Dataset</h3><a href="https://aikosh.indiaai.gov.in/home/datasets/details/crop_disease_and_insect_pest_image_dataset_for_rice_and_maize.html" target="_blank" rel="noopener" class="text-purple-400 text-sm hover:underline">aikosh.indiaai.gov.in ↗</a></div>
+          <span class="tag" style="background:rgba(139,92,246,0.14);color:#c4b5fd;border:1px solid rgba(139,92,246,0.3)">India Validation</span>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-3">
+          <div><div class="text-gray-500 text-xs mb-0.5">Crops</div><div class="text-gray-200">Rice, Maize</div></div>
+          <div><div class="text-gray-500 text-xs mb-0.5">Purpose</div><div class="text-gray-200">India eval.</div></div>
+          <div><div class="text-gray-500 text-xs mb-0.5">Access</div><div class="text-gray-200">Verify first</div></div>
+          <div><div class="text-gray-500 text-xs mb-0.5">License</div><div class="text-gray-200">ICAR Data License</div></div>
+        </div>
+        <div class="text-xs text-yellow-500/80">⚠️ Verify access permission, label quality, and ICAR Data Use License before any training use. Validation only in this project.</div>
+      </div>
+
+      <div class="glass glass-hover rounded-2xl p-5" style="border-top:3px solid #ec4899">
+        <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
+          <div><h3 class="font-bold text-white text-base">Rice Disease Segmentation Dataset</h3><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC9695445/" target="_blank" rel="noopener" class="text-pink-400 text-sm hover:underline">pmc.ncbi.nlm.nih.gov/articles/PMC9695445/ ↗</a></div>
+          <span class="tag" style="background:rgba(236,72,153,0.14);color:#f9a8d4;border:1px solid rgba(236,72,153,0.3)">Segmentation</span>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-3">
+          <div><div class="text-gray-500 text-xs mb-0.5">Crop</div><div class="text-gray-200">Rice only</div></div>
+          <div><div class="text-gray-500 text-xs mb-0.5">Purpose</div><div class="text-gray-200">Lesion segmentation</div></div>
+          <div><div class="text-gray-500 text-xs mb-0.5">Annotation</div><div class="text-gray-200">Pixel-level masks</div></div>
+          <div><div class="text-gray-500 text-xs mb-0.5">Model</div><div class="text-gray-200">U-Net / DeepLabV3+</div></div>
+        </div>
+        <div class="text-xs text-gray-500">Enables severity estimation via lesion_pixels ÷ leaf_pixels × 100. Only dataset with pixel-level annotations for rice diseases.</div>
+      </div>
+    </div>
+
+    <!-- Metadata schema -->
+    <div class="glass rounded-2xl p-5 mb-8">
+      <h3 class="font-semibold text-white mb-3">Dataset Metadata Schema</h3>
+      <div class="rounded-xl p-4 font-mono text-xs text-agri-300 overflow-x-auto" style="background:rgba(6,13,6,0.8);border:1px solid rgba(26,42,26,1)">image_path,dataset,crop,condition,category,split,annotation_type,license</div>
+      <div class="mt-3 text-xs text-gray-500">Required preprocessing: remove corrupt/duplicate images · normalize labels · resize to 224×224 · class balance · safe augmentation · keep PlantDoc/ICAR separate for eval.</div>
+    </div>
+
+    <!-- Limitations -->
+    <div class="glass rounded-2xl p-5">
+      <h3 class="font-semibold text-white mb-4">⚠️ Known Limitations</h3>
+      <div class="space-y-2.5 text-sm">
+        <div class="flex gap-3"><span class="text-yellow-400 mt-0.5 flex-shrink-0">•</span><span class="text-gray-400">Severity estimation available <strong class="text-gray-200">only for rice diseases</strong> with lesion annotations. Tomato and potato display "Unavailable".</span></div>
+        <div class="flex gap-3"><span class="text-yellow-400 mt-0.5 flex-shrink-0">•</span><span class="text-gray-400">PlantVillage images are largely studio images. Performance on real-field images with natural backgrounds may be lower.</span></div>
+        <div class="flex gap-3"><span class="text-yellow-400 mt-0.5 flex-shrink-0">•</span><span class="text-gray-400">The model requires visible symptoms. Early-stage or microscopic disease detection is not supported.</span></div>
+        <div class="flex gap-3"><span class="text-yellow-400 mt-0.5 flex-shrink-0">•</span><span class="text-gray-400">Near-duplicate images from training and test sets may affect accuracy metrics. Prevention steps are applied but not guaranteed.</span></div>
+        <div class="flex gap-3"><span class="text-red-400 mt-0.5 flex-shrink-0">•</span><span class="text-gray-400">This demo uses a <strong class="text-gray-200">mock inference pipeline</strong>. All results are simulated. No real AI model is running.</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div><!-- /pages -->
+
+<!-- FOOTER -->
+<footer class="glass mt-auto" style="border-top:1px solid rgba(26,42,26,1);border-bottom:none;border-left:none;border-right:none">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-10">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+      <div class="col-span-2 md:col-span-1">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background:linear-gradient(135deg,#16a34a,#22c55e)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/></svg></div>
+          <span class="font-bold text-white">Agri<span class="text-agri-400">Shield</span></span>
+        </div>
+        <p class="text-xs text-gray-500">AI-powered crop disease detection. Decision-support tool — not a diagnostic service.</p>
+      </div>
+      <div>
+        <h4 class="text-sm font-semibold text-gray-300 mb-3">Product</h4>
+        <div class="space-y-2"><button onclick="nav('analyze')" class="block text-sm text-gray-500 hover:text-agri-400 transition-colors">Analyze a Leaf</button><button onclick="nav('history')" class="block text-sm text-gray-500 hover:text-agri-400 transition-colors">History</button></div>
+      </div>
+      <div>
+        <h4 class="text-sm font-semibold text-gray-300 mb-3">Transparency</h4>
+        <div class="space-y-2"><button onclick="nav('crops')" class="block text-sm text-gray-500 hover:text-agri-400 transition-colors">Supported Crops</button><button onclick="nav('datasets')" class="block text-sm text-gray-500 hover:text-agri-400 transition-colors">Datasets &amp; Models</button></div>
+      </div>
+      <div>
+        <h4 class="text-sm font-semibold text-gray-300 mb-3">Datasets</h4>
+        <div class="space-y-2">
+          <a href="https://paddydoc.github.io/dataset/" target="_blank" class="block text-sm text-gray-500 hover:text-agri-400 transition-colors">Paddy Doctor ↗</a>
+          <a href="https://github.com/spMohanty/PlantVillage-Dataset" target="_blank" class="block text-sm text-gray-500 hover:text-agri-400 transition-colors">PlantVillage ↗</a>
+        </div>
+      </div>
+    </div>
+    <div style="border-top:1px solid rgba(26,42,26,1)" class="pt-5 flex flex-col md:flex-row items-center justify-between gap-3">
+      <div class="text-xs text-gray-600">© 2025 AgriShield — Hackathon Demo. All results are simulated and labeled as demo data.</div>
+      <div class="text-xs text-yellow-600">⚠️ Always consult a qualified agricultural expert before treatment decisions.</div>
+    </div>
+  </div>
+</footer>
+
+<!-- ████ CAMERA MODAL ████ -->
+<div id="cam-modal" class="fixed inset-0 z-50 hidden items-center justify-center" style="background:rgba(0,0,0,0.88)">
+  <div class="glass rounded-2xl p-6 w-full max-w-lg mx-4 glow">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-white text-lg">Camera Capture</h3>
+      <button onclick="closeCam()" class="text-gray-400 hover:text-white p-1 rounded-lg transition-colors">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="relative rounded-xl overflow-hidden bg-black mb-4" style="aspect-ratio:4/3">
+      <video id="cam-feed" autoplay playsinline class="w-full h-full object-cover"></video>
+      <div class="absolute inset-0 pointer-events-none flex items-center justify-center">
+        <div style="width:65%;height:65%;border:2px solid rgba(34,197,94,0.7);border-radius:8px;box-shadow:0 0 0 9999px rgba(0,0,0,0.35)"></div>
+      </div>
+      <div class="absolute bottom-3 left-0 right-0 text-center text-xs text-agri-400">Center the leaf within the guide frame</div>
+    </div>
+    <div class="flex gap-3">
+      <button onclick="capturePhoto()" class="btn-p flex-1 py-3 rounded-xl flex items-center justify-center gap-2 text-sm">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Capture Photo
+      </button>
+      <button onclick="closeCam()" class="btn-o px-5 py-3 rounded-xl text-sm">Cancel</button>
+    </div>
+    <canvas id="cam-canvas" class="hidden"></canvas>
+    <div id="cam-err" class="hidden mt-3 text-sm text-red-400 text-center"></div>
+  </div>
+</div>
+
+<!-- ████ PROGRESS OVERLAY ████ -->
+<div id="prog-overlay" class="fixed inset-0 z-40 hidden items-center justify-center" style="background:rgba(6,13,6,0.94)">
+  <div class="max-w-md w-full mx-4">
+    <div class="glass rounded-2xl p-8 glow text-center">
+      <div class="w-20 h-20 mx-auto mb-5 relative">
+        <svg class="animate-spin-slow w-full h-full" viewBox="0 0 80 80"><circle cx="40" cy="40" r="36" fill="none" stroke="rgba(34,197,94,0.15)" stroke-width="3"/><path d="M40 4 A36 36 0 0 1 76 40" fill="none" stroke="#22c55e" stroke-width="3" stroke-linecap="round"/></svg>
+        <div class="absolute inset-0 flex items-center justify-center text-2xl" id="prog-icon">🔍</div>
+      </div>
+      <div id="prog-label" class="font-semibold text-white text-lg mb-1">Analyzing...</div>
+      <div id="prog-sub" class="text-sm text-gray-400 mb-7">Please wait</div>
+      <div class="flex items-center justify-center gap-1.5 mb-3">
+        <div class="pstep" id="ps0"><div class="sico">1</div></div>
+        <div class="step-conn" id="sc0"></div>
+        <div class="pstep" id="ps1"><div class="sico">2</div></div>
+        <div class="step-conn" id="sc1"></div>
+        <div class="pstep" id="ps2"><div class="sico">3</div></div>
+        <div class="step-conn" id="sc2"></div>
+        <div class="pstep" id="ps3"><div class="sico">4</div></div>
+        <div class="step-conn" id="sc3"></div>
+        <div class="pstep" id="ps4"><div class="sico">5</div></div>
+        <div class="step-conn" id="sc4"></div>
+        <div class="pstep" id="ps5"><div class="sico">6</div></div>
+      </div>
+      <div class="flex justify-between text-xs text-gray-600 px-1">
+        <span>Validate</span><span>Crop</span><span>Disease</span><span>Severity</span><span>Heatmap</span><span>Guidance</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ████ TOAST ████ -->
+<div id="toasts" class="fixed bottom-4 right-4 z-50 space-y-2" style="width:320px"></div>
+
+<script>
+'use strict';
+
+// ════════════════════════════════════
+// CONSTANTS
+// ════════════════════════════════════
+const MAX_SIZE = 10*1024*1024, MIN_DIM = 300, BLUR_THRESH = 75;
+const CONF_NORMAL = 0.70, CONF_LOW = 0.55;
+const STORE_KEY = 'agrishield_v2';
+
+const CROPS = {
+  rice:   { name:'Rice / Paddy', emoji:'🌾',
+    conds:[ {id:'healthy',name:'Healthy',sev:false},
+            {id:'bacterial_leaf_blight',name:'Bacterial Leaf Blight',sev:true},
+            {id:'brown_spot',name:'Brown Spot',sev:true},
+            {id:'leaf_blast',name:'Leaf Blast',sev:true},
+            {id:'sheath_blight',name:'Sheath Blight',sev:true} ] },
+  tomato: { name:'Tomato', emoji:'🍅',
+    conds:[ {id:'healthy',name:'Healthy',sev:false},
+            {id:'early_blight',name:'Early Blight',sev:false},
+            {id:'late_blight',name:'Late Blight',sev:false},
+            {id:'bacterial_spot',name:'Bacterial Spot',sev:false},
+            {id:'leaf_mold',name:'Leaf Mold',sev:false} ] },
+  potato: { name:'Potato', emoji:'🥔',
+    conds:[ {id:'healthy',name:'Healthy',sev:false},
+            {id:'early_blight',name:'Early Blight',sev:false},
+            {id:'late_blight',name:'Late Blight',sev:false} ] }
+};
+
+const SEV_LEVELS = [
+  {label:'Healthy',   min:0,    max:0,    col:'#22c55e'},
+  {label:'Mild',      min:0.1,  max:10,   col:'#84cc16'},
+  {label:'Moderate',  min:10.1, max:25,   col:'#f59e0b'},
+  {label:'High',      min:25.1, max:45,   col:'#f97316'},
+  {label:'Very High', min:45.1, max:65,   col:'#ef4444'},
+  {label:'Critical',  min:65.1, max:100,  col:'#7f1d1d'},
+];
+
+const DISEASE_DESC = {
+  healthy:'The leaf shows no visible signs of disease or stress. Continue regular monitoring and good agricultural practices.',
+  bacterial_leaf_blight:'Caused by Xanthomonas oryzae pv. oryzae. Water-soaked lesions progress to yellowish-white on leaf margins, characteristic of bacterial invasion during humid conditions.',
+  brown_spot:'Caused by Bipolaris oryzicola. Circular to oval brown spots with a yellow halo on leaves, often associated with nutrient deficiency and water stress.',
+  leaf_blast:'Caused by Magnaporthe oryzae. Diamond-shaped lesions with dark green borders turning grey in the centre — one of the most damaging rice diseases globally.',
+  sheath_blight:'Caused by Rhizoctonia solani. Irregular lesions on the sheath that can progress to the leaf blade under humid, high-density planting conditions.',
+  early_blight:'Caused by Alternaria solani. Concentric ring patterns on older leaves, starting as dark brown spots. Associated with fluctuating temperatures.',
+  late_blight:'Caused by Phytophthora infestans. Water-soaked lesions turning dark brown to black. Fast-spreading in cool, wet weather.',
+  bacterial_spot:'Caused by Xanthomonas spp. Small, dark, water-soaked spots with yellow halos on leaves and fruit. Spread by rain splash and wind.',
+  leaf_mold:'Caused by Passalora fulva. Pale yellow patches on upper leaf surface with olive-green mould on underside. Common in humid greenhouse environments.',
+};
+
+const RECS = {
+  healthy:[
+    {t:'success',i:'✅',h:'Continue Regular Monitoring',b:'Inspect leaves weekly. Look for discoloration, spots, or unusual patterns on new growth.'},
+    {t:'success',i:'💧',h:'Maintain Proper Irrigation',b:'Avoid waterlogging and leaf wetness. Use drip irrigation where possible to reduce foliar diseases.'},
+    {t:'success',i:'🌱',h:'Balanced Nutrition',b:'Ensure adequate nitrogen, phosphorus, and potassium. Avoid over-fertilization which can increase disease susceptibility.'},
+  ],
+  low_conf:[
+    {t:'warning',i:'📷',h:'Upload a Clearer Image',b:'Image quality or leaf visibility was insufficient. Try better lighting with a single, clearly visible leaf against a plain background.'},
+    {t:'warning',i:'👨‍🌾',h:'Consult an Agricultural Expert',b:'We could not identify this condition reliably. Please consult a local agricultural extension officer for an in-field assessment.'},
+    {t:'info',i:'🔁',h:'Try Again',b:'Photograph the affected leaf in natural daylight against a plain background for the best prediction accuracy.'},
+  ],
+  mild:[
+    {t:'info',i:'👁️',h:'Monitor Closely',b:'Check affected plants daily. Look for spread to neighbouring leaves and plants.'},
+    {t:'info',i:'🍃',h:'Remove Visibly Affected Leaves',b:'Where practical, remove leaves with visible lesions. Dispose of them away from the field — do not compost.'},
+    {t:'success',i:'💨',h:'Improve Air Circulation',b:'Thin dense plantings to allow airflow. Avoid overhead watering. Ensure adequate row spacing.'},
+    {t:'warning',i:'📝',h:'Keep Records',b:'Document location, date, and extent. Compare future scans to track whether the condition improves or worsens.'},
+  ],
+  moderate:[
+    {t:'warning',i:'🚧',h:'Isolate Affected Plants',b:'Where possible, create buffer space around clearly affected plants to slow the spread to healthy crops.'},
+    {t:'warning',i:'💧',h:'Avoid Overhead Irrigation',b:'Switch to drip or furrow irrigation immediately. Leaf wetness accelerates most fungal and bacterial diseases.'},
+    {t:'warning',i:'👨‍🌾',h:'Seek Local Agricultural Guidance',b:'Contact your nearest agricultural extension office. Describe symptoms, affected area, and recent weather conditions.'},
+    {t:'info',i:'🌬️',h:'Improve Airflow',b:'Prune for airflow. Remove lower leaves that touch the soil to reduce splash-up of soil pathogens.'},
+  ],
+  high:[
+    {t:'danger',i:'⛔',h:'Prevent Further Spread',b:'Do not move plant material between field sections. Clean and disinfect tools between plants.'},
+    {t:'danger',i:'👨‍🌾',h:'Expert Inspection Required',b:'Disease severity is significant. Request an in-field inspection from a certified agricultural expert immediately.'},
+    {t:'danger',i:'🚫',h:'No Self-Treatment with Chemicals',b:'Do not apply fungicides or pesticides without a crop- and region-specific recommendation from a certified expert.'},
+    {t:'info',i:'📊',h:'Document and Photograph',b:'Keep a record of affected plants and areas. This helps experts assess progression and recommend appropriate action.'},
+  ],
+  very_high:[
+    {t:'danger',i:'🆘',h:'Immediate Expert Consultation',b:'Very high severity detected. Seek expert help immediately to prevent total crop loss in affected sections.'},
+    {t:'danger',i:'🔒',h:'Quarantine Affected Section',b:'Restrict access to severely affected areas. Mark rows or sections for separate treatment and monitoring.'},
+    {t:'danger',i:'🚫',h:'No Chemical Treatment Without Prescription',b:'A qualified agronomist must prescribe crop- and region-appropriate treatment. Self-treatment can make conditions worse.'},
+    {t:'warning',i:'📋',h:'Prepare an Incident Report',b:'Document crop losses for insurance and government support programs. Photograph affected areas systematically.'},
+  ],
+  critical:[
+    {t:'danger',i:'🆘',h:'Emergency — Consult Expert Now',b:'Critical severity detected. Contact your agricultural department or a certified crop protection specialist immediately.'},
+    {t:'danger',i:'🔇',h:'Consider Field Isolation',b:'Prevent spread to neighbouring fields. Inform adjacent farmers and local agricultural authorities.'},
+    {t:'danger',i:'🚫',h:'Do Not Apply Chemicals Without Expert Guidance',b:'Incorrect pesticide application at this stage can worsen conditions and affect neighbouring crops and soil health.'},
+  ],
+};
+
+// ════════════════════════════════════
+// STATE
+// ════════════════════════════════════
+const S = {
+  page:'home', file:null, imgDataURL:null, result:null,
+  valOk:false, history:[], camStream:null, chart:null, histFilter:'all'
+};
+
+// ════════════════════════════════════
+// ROUTER
+// ════════════════════════════════════
+function nav(page) {
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById('page-'+page);
+  if(el) { el.classList.add('active'); S.page = page; }
+  document.querySelectorAll('[data-page]').forEach(b => b.classList.toggle('active', b.dataset.page===page));
+  window.scrollTo({top:0,behavior:'smooth'});
+  if(page==='history') renderHist();
+  if(page==='results' && S.result) renderResults(S.result);
+}
+
+function toggleMenu() { document.getElementById('mobile-menu').classList.toggle('open'); }
+
+// ════════════════════════════════════
+// IMAGE VALIDATION
+// ════════════════════════════════════
+function readFile(f){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=e=>res(e.target.result); r.onerror=rej; r.readAsDataURL(f); }); }
+function loadImg(src){ return new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=src; }); }
+
+function measureBlur(img){
+  const S=100, c=document.createElement('canvas'); c.width=S; c.height=S;
+  const ctx=c.getContext('2d'); ctx.drawImage(img,0,0,S,S);
+  const d=ctx.getImageData(0,0,S,S).data;
+  let sum=0,n=0;
+  for(let y=1;y<S-1;y++) for(let x=1;x<S-1;x++){
+    const i=(y*S+x)*4;
+    const g=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
+    const gT=0.299*d[((y-1)*S+x)*4]+0.587*d[((y-1)*S+x)*4+1]+0.114*d[((y-1)*S+x)*4+2];
+    const gB=0.299*d[((y+1)*S+x)*4]+0.587*d[((y+1)*S+x)*4+1]+0.114*d[((y+1)*S+x)*4+2];
+    const gL=0.299*d[(y*S+x-1)*4]+0.587*d[(y*S+x-1)*4+1]+0.114*d[(y*S+x-1)*4+2];
+    const gR=0.299*d[(y*S+x+1)*4]+0.587*d[(y*S+x+1)*4+1]+0.114*d[(y*S+x+1)*4+2];
+    sum+=Math.abs(2*g-gT-gB)+Math.abs(2*g-gL-gR); n++;
+  }
+  return sum/n;
+}
+
+function leafPresence(img){
+  const S=80, c=document.createElement('canvas'); c.width=S; c.height=S;
+  const ctx=c.getContext('2d'); ctx.drawImage(img,0,0,S,S);
+  const d=ctx.getImageData(0,0,S,S).data;
+  let g=0;
+  for(let i=0;i<d.length;i+=4) if(d[i+1]>d[i] && d[i+1]>d[i+2] && d[i+1]>40) g++;
+  return g/(S*S);
+}
+
+async function validate(file){
+  const steps=[];
+  const allowed=['image/jpeg','image/png','image/webp'];
+  if(!allowed.includes(file.type)){ steps.push({l:'File Type',s:'fail',m:'Only JPG, PNG, or WebP files are supported.'}); return {ok:false,steps,dataURL:null}; }
+  steps.push({l:'File Type',s:'pass',m:file.type.split('/')[1].toUpperCase()});
+  if(file.size>MAX_SIZE){ steps.push({l:'File Size',s:'fail',m:`${(file.size/1024/1024).toFixed(1)} MB — max is 10 MB.`}); return {ok:false,steps,dataURL:null}; }
+  steps.push({l:'File Size',s:'pass',m:`${(file.size/1024).toFixed(0)} KB`});
+  const dataURL=await readFile(file);
+  const img=await loadImg(dataURL);
+  if(img.width<MIN_DIM||img.height<MIN_DIM){ steps.push({l:'Resolution',s:'fail',m:`${img.width}×${img.height}px — minimum is 300×300.`}); return {ok:false,steps,dataURL,w:img.width,h:img.height}; }
+  steps.push({l:'Resolution',s:'pass',m:`${img.width}×${img.height}px`});
+  const blur=measureBlur(img);
+  steps.push(blur<BLUR_THRESH ? {l:'Sharpness',s:'warn',m:`Image may be blurry (score ${blur.toFixed(0)}). Results may be less accurate.`} : {l:'Sharpness',s:'pass',m:`Good (score ${blur.toFixed(0)})`});
+  const leaf=leafPresence(img);
+  steps.push(leaf<0.07 ? {l:'Leaf Detected',s:'warn',m:'No strong leaf signal found. Ensure a clear leaf is visible.'} : {l:'Leaf Detected',s:'pass',m:`Green signal ${(leaf*100).toFixed(0)}%`});
+  return {ok:true,steps,dataURL,w:img.width,h:img.height};
+}
+
+function showValUI(steps){
+  const c=document.getElementById('val-steps'), d=document.getElementById('val-display');
+  d.classList.remove('hidden');
+  const icons={pass:'<span class="text-agri-400">✓</span>',fail:'<span class="text-red-400">✗</span>',warn:'<span class="text-yellow-400">⚠</span>',loading:'<span class="text-gray-400">⟳</span>'};
+  const cols={pass:'text-agri-400',fail:'text-red-400',warn:'text-yellow-400',loading:'text-gray-500'};
+  c.innerHTML=steps.map(s=>`<div class="flex items-start gap-3 text-sm">${icons[s.s]||icons.loading}<span class="text-gray-300 font-medium w-28 flex-shrink-0">${s.l}</span><span class="${cols[s.s]||'text-gray-500'}">${s.m}</span></div>`).join('');
+}
+
+// ════════════════════════════════════
+// UPLOAD HANDLERS
+// ════════════════════════════════════
+async function onFileSelect(e){ const f=e.target.files[0]; if(f) await processFile(f); }
+function onDragOver(e){ e.preventDefault(); document.getElementById('drop-zone').classList.add('drag-over'); }
+function onDragLeave(){ document.getElementById('drop-zone').classList.remove('drag-over'); }
+async function onDrop(e){ e.preventDefault(); document.getElementById('drop-zone').classList.remove('drag-over'); const f=e.dataTransfer.files[0]; if(f) await processFile(f); }
+
+async function processFile(file){
+  S.file=file; S.valOk=false;
+  document.getElementById('upload-section').style.display='none';
+  document.getElementById('preview-section').classList.remove('hidden');
+  document.getElementById('analyze-btn').disabled=true;
+  document.getElementById('analyze-btn').style.opacity='.5';
+  document.getElementById('analyze-btn').style.cursor='not-allowed';
+  showValUI([{l:'Validating',s:'loading',m:'Checking image quality…'}]);
+  const res=await validate(file);
+  S.imgDataURL=res.dataURL; S.valOk=res.ok;
+  if(res.dataURL) document.getElementById('prev-img').src=res.dataURL;
+  document.getElementById('img-meta').innerHTML=`<span>${file.name}</span><span>${(file.size/1024).toFixed(0)} KB</span>${res.w?`<span>${res.w}×${res.h}px</span>`:''}`;
+  showValUI(res.steps);
+  const badge=document.getElementById('val-badge'), errBox=document.getElementById('val-err-box'), btn=document.getElementById('analyze-btn');
+  if(res.ok){
+    badge.className='tag t-ok text-xs'; badge.textContent='✓ Valid';
+    errBox.classList.add('hidden'); btn.disabled=false; btn.style.opacity='1'; btn.style.cursor='pointer';
+  } else {
+    badge.className='tag t-bad text-xs'; badge.textContent='✗ Failed';
+    const fail=res.steps.find(s=>s.s==='fail');
+    errBox.classList.remove('hidden'); document.getElementById('val-err-msg').textContent=fail?fail.m:'Validation failed.';
+  }
+}
+
+function resetUpload(){
+  S.file=null; S.imgDataURL=null; S.valOk=false;
+  document.getElementById('upload-section').style.display='';
+  document.getElementById('preview-section').classList.add('hidden');
+  document.getElementById('val-display').classList.add('hidden');
+  document.getElementById('file-in').value='';
+}
+
+// ════════════════════════════════════
+// SAMPLE IMAGE
+// ════════════════════════════════════
+async function loadSample(){
+  toast('Loading sample rice leaf image…','info');
+  const c=document.createElement('canvas'); c.width=512; c.height=512;
+  const ctx=c.getContext('2d');
+  // background
+  ctx.fillStyle='#1a2e1a'; ctx.fillRect(0,0,512,512);
+  ctx.save(); ctx.translate(256,256);
+  // leaf gradient
+  const g=ctx.createRadialGradient(0,-20,20,0,0,200);
+  g.addColorStop(0,'#4ade80'); g.addColorStop(0.5,'#16a34a'); g.addColorStop(1,'#14532d');
+  ctx.fillStyle=g;
+  ctx.beginPath();
+  ctx.moveTo(0,-220); ctx.bezierCurveTo(120,-150,160,0,80,200);
+  ctx.lineTo(0,230); ctx.lineTo(-80,200);
+  ctx.bezierCurveTo(-160,0,-120,-150,0,-220); ctx.fill();
+  // midrib
+  ctx.strokeStyle='rgba(5,40,5,0.65)'; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.moveTo(0,-220); ctx.lineTo(0,230); ctx.stroke();
+  // veins
+  ctx.lineWidth=1.2; ctx.strokeStyle='rgba(5,40,5,0.35)';
+  for(let i=-4;i<=4;i++){ if(!i) continue; const y=i*42,x=i*7; ctx.beginPath(); ctx.moveTo(0,y); ctx.quadraticCurveTo(x*5,y-18,x*8,y-3); ctx.stroke(); }
+  // disease spots (brown spot simulation)
+  const spots=[[40,30,12],[0-30,80,9],[20,-50,15],[0-50,10,8],[60,-30,11],[0-20,120,10]];
+  spots.forEach(([sx,sy,sr])=>{
+    ctx.fillStyle='rgba(110,55,15,0.8)'; ctx.beginPath(); ctx.arc(sx,sy,sr,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='rgba(70,25,5,0.9)'; ctx.beginPath(); ctx.arc(sx,sy,sr*0.45,0,Math.PI*2); ctx.fill();
+  });
+  ctx.restore();
+  c.toBlob(async blob=>{ const f=new File([blob],'sample_rice_brown_spot.png',{type:'image/png'}); await processFile(f); toast('Sample loaded. Click Analyze Image to continue.','success'); },'image/png');
+}
+
+// ════════════════════════════════════
+// CAMERA
+// ════════════════════════════════════
+async function openCam(){
+  document.getElementById('cam-modal').style.display='flex';
+  document.getElementById('cam-err').classList.add('hidden');
+  try {
+    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}});
+    S.camStream=stream; document.getElementById('cam-feed').srcObject=stream;
+  } catch(e) {
+    const el=document.getElementById('cam-err'); el.classList.remove('hidden');
+    el.textContent='Camera access denied or unavailable. Please allow camera permissions and try again.';
+  }
+}
+function closeCam(){
+  if(S.camStream){ S.camStream.getTracks().forEach(t=>t.stop()); S.camStream=null; }
+  document.getElementById('cam-feed').srcObject=null;
+  document.getElementById('cam-modal').style.display='none';
+}
+async function capturePhoto(){
+  const v=document.getElementById('cam-feed'), c=document.getElementById('cam-canvas');
+  c.width=v.videoWidth||640; c.height=v.videoHeight||480;
+  c.getContext('2d').drawImage(v,0,0);
+  c.toBlob(async blob=>{ closeCam(); const f=new File([blob],'camera_capture.jpg',{type:'image/jpeg'}); await processFile(f); },'image/jpeg',0.92);
+}
+
+// ════════════════════════════════════
+// MOCK INFERENCE
+// ════════════════════════════════════
+function rng(seed){ let s=seed; return ()=>{ s=(s*1664525+1013904223)&0xFFFFFFFF; return (s>>>0)/0xFFFFFFFF; }; }
+function hash(str){ let h=2166136261; for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=(h*16777619)>>>0; } return h; }
+function uid(){ return 'sc_'+Date.now()+'_'+Math.random().toString(36).slice(2,7); }
+
+function getSevLevel(pct){
+  if(pct===0) return SEV_LEVELS[0];
+  return SEV_LEVELS.find(l=>pct>=l.min&&pct<=l.max) || SEV_LEVELS[SEV_LEVELS.length-1];
+}
+function sevKey(pct){
+  if(pct===0) return 'healthy';
+  if(pct<=10) return 'mild';
+  if(pct<=25) return 'moderate';
+  if(pct<=45) return 'high';
+  if(pct<=65) return 'very_high';
+  return 'critical';
+}
+
+function mockInfer(file){
+  const r=rng(hash(file.name+file.size+file.lastModified));
+  const roll=r(); const crop=roll<0.5?'rice':roll<0.8?'tomato':'potato';
+  const cd=CROPS[crop];
+  let cond;
+  if(r()<0.25) cond=cd.conds.find(c=>c.id==='healthy');
+  else { const d=cd.conds.filter(c=>c.id!=='healthy'); cond=d[Math.floor(r()*d.length)]; }
+  const healthy=cond.id==='healthy';
+  const conf=Math.min(healthy?(0.78+r()*0.20):(0.52+r()*0.46), 0.99);
+  const cState=conf>=CONF_NORMAL?'normal':conf>=CONF_LOW?'low':'unreliable';
+
+  if(cState==='unreliable') return {
+    scanId:uid(), timestamp:Date.now(),
+    crop:null, cropName:'Unknown', cropEmoji:'❓',
+    cond:'unable', condName:'Unable to Identify Reliably',
+    healthy:null, conf, cState, sevPct:null, sevLabel:null, sevKey:null,
+    hmap:null, recs:RECS.low_conf, isDemoData:true,
+    desc:'We could not identify this condition reliably. Please upload a clearer image or consult an agricultural expert.',
+  };
+
+  let sevPct=null, sevLabel=null, sk=null;
+  if(crop==='rice' && !healthy && cond.sev){
+    sevPct=parseFloat((r()*74+0.8).toFixed(1));
+    const sl=getSevLevel(sevPct); sevLabel=sl.label; sk=sevKey(sevPct);
+  }
+
+  const hmap=buildHmap(r,healthy);
+  const recKey=healthy?'healthy':(sk||'mild');
+  return {
+    scanId:uid(), timestamp:Date.now(),
+    crop, cropName:cd.name, cropEmoji:cd.emoji,
+    cond:cond.id, condName:cond.name,
+    healthy, conf, cState, sevPct, sevLabel, sevKey:sk,
+    hmap, recs:RECS[recKey]||RECS.mild, isDemoData:true,
+    desc:DISEASE_DESC[cond.id]||'',
+  };
+}
+
+function buildHmap(r,healthy){
+  const R=24,C=24,map=[];
+  const cx=6+Math.floor(r()*10), cy=6+Math.floor(r()*10);
+  const cx2=10+Math.floor(r()*8), cy2=10+Math.floor(r()*8);
+  for(let row=0;row<R;row++){
+    const rw=[];
+    for(let col=0;col<C;col++){
+      let v=0;
+      if(!healthy){
+        const d1=Math.sqrt((row-cy)**2+(col-cx)**2);
+        const d2=Math.sqrt((row-cy2)**2+(col-cx2)**2);
+        v=Math.exp(-d1/4)*0.85+Math.exp(-d2/5)*0.55+r()*0.12;
+        v=Math.min(1,v);
+      } else v=r()*0.1;
+      rw.push(v);
+    }
+    map.push(rw);
+  }
+  return map;
+}
+
+// ════════════════════════════════════
+// PROGRESS STEPS
+// ════════════════════════════════════
+const PSTEPS=[
+  {l:'Validating Image',s:'Checking image quality and format',i:'🔍'},
+  {l:'Identifying Crop',s:'Detecting crop type from leaf features',i:'🌿'},
+  {l:'Detecting Disease',s:'Running EfficientNet-B0 classifier',i:'🔬'},
+  {l:'Estimating Severity',s:'Running U-Net lesion segmentation',i:'📊'},
+  {l:'Generating Heatmap',s:'Computing Grad-CAM activations',i:'🗺️'},
+  {l:'Preparing Guidance',s:'Calibrating severity-aware recommendations',i:'📋'},
+];
+
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+async function startAnalysis(){
+  if(!S.file||!S.valOk) return;
+  showProg();
+  for(let i=0;i<6;i++){ setPStep(i); await sleep(500+Math.random()*600); }
+  const result=mockInfer(S.file);
+  result.imgDataURL=S.imgDataURL;
+  S.result=result;
+  saveHist(result);
+  await sleep(300);
+  hideProg();
+  nav('results');
+}
+
+function showProg(){ document.getElementById('prog-overlay').style.display='flex'; resetSteps(); }
+function hideProg(){ document.getElementById('prog-overlay').style.display='none'; }
+function resetSteps(){ for(let i=0;i<6;i++){ document.getElementById('ps'+i).className='pstep'; const s=document.getElementById('ps'+i).querySelector('.sico'); if(s){s.textContent=i+1;s.style.color='';} if(i<5) document.getElementById('sc'+i).className='step-conn'; } }
+
+function setPStep(idx){
+  const p=PSTEPS[idx];
+  document.getElementById('prog-label').textContent=p.l;
+  document.getElementById('prog-sub').textContent=p.s;
+  document.getElementById('prog-icon').textContent=p.i;
+  for(let i=0;i<idx;i++){
+    const el=document.getElementById('ps'+i); el.className='pstep done';
+    const s=el.querySelector('.sico'); if(s) s.textContent='✓';
+    if(i<5) document.getElementById('sc'+i).className='step-conn done';
+  }
+  document.getElementById('ps'+idx).className='pstep active';
+}
+
+// ════════════════════════════════════
+// RESULTS RENDERER
+// ════════════════════════════════════
+function renderResults(result){
+  const el=document.getElementById('results-content');
+  if(!result){ el.innerHTML='<div class="text-center text-gray-500 py-20">No result. <button onclick="nav(\'analyze\')" class="text-agri-400 underline">Analyze a leaf</button></div>'; return; }
+  const unreliable=result.cState==='unreliable', lowConf=result.cState==='low';
+  const cpct=Math.round(result.conf*100);
+  const cCol=cpct>=70?'#22c55e':cpct>=55?'#f59e0b':'#ef4444';
+  const sl=result.sevPct!==null?getSevLevel(result.sevPct):null;
+  let h='';
+
+  // Demo Banner
+  h+=`<div class="flex items-center gap-3 p-3.5 rounded-xl mb-5" style="border:1px solid rgba(99,102,241,0.35);background:rgba(99,102,241,0.1)">
+    <span class="text-indigo-400 text-lg flex-shrink-0">🧪</span>
+    <div class="flex-1 min-w-0">
+      <div class="text-sm font-semibold text-indigo-300">DEMO DATA — Not a real AI prediction</div>
+      <div class="text-xs text-indigo-400/70">Generated by mock inference pipeline for demonstration purposes only.</div>
+    </div>
+    <span class="tag t-demo text-xs flex-shrink-0">MOCK</span>
+  </div>`;
+
+  if(unreliable){
+    h+=`<div class="glass rounded-2xl p-8 text-center mb-5">
+      <div class="text-5xl mb-4">🤷</div>
+      <h2 class="text-2xl font-bold text-white mb-3">Unable to Identify Reliably</h2>
+      <p class="text-gray-400 max-w-md mx-auto mb-5">We could not identify this condition reliably. Please upload a clearer image or consult an agricultural expert.</p>
+      <div class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-yellow-300 text-sm" style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25)">Confidence: ${cpct}% — below reliability threshold (55%)</div>
+    </div>`;
+  } else {
+    const hBadge=result.healthy?`<span class="tag t-ok">✓ Healthy</span>`:`<span class="tag t-bad">⚠ Disease Detected</span>`;
+    const lcBadge=lowConf?`<span class="tag t-warn ml-1.5">Low Confidence</span>`:'';
+    h+=`<div class="glass rounded-2xl p-6 mb-5 glow-sm">
+      <div class="flex flex-col md:flex-row gap-5">
+        <div class="flex-1">
+          <div class="flex items-center gap-3 mb-3">
+            <span class="text-4xl">${result.cropEmoji}</span>
+            <div><div class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-0.5">${result.cropName}</div><h2 class="text-2xl font-bold text-white">${result.condName}</h2></div>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 mb-3">${hBadge}${lcBadge}</div>
+          ${result.desc?`<p class="text-gray-400 text-sm leading-relaxed">${result.desc}</p>`:''}
+        </div>
+        <div class="md:w-44 flex-shrink-0">
+          <div class="glass-sm rounded-xl p-4 text-center">
+            <div class="text-xs text-gray-500 uppercase tracking-wider mb-1.5">Confidence</div>
+            <div class="text-3xl font-black mb-1.5" style="color:${cCol}">${cpct}%</div>
+            <div class="sev-bar mb-2"><div class="sev-fill" style="width:${cpct}%;background:linear-gradient(90deg,#ef4444,#f59e0b,#22c55e)"></div></div>
+            <div class="text-xs font-medium" style="color:${cCol}">${result.cState==='normal'?'High Confidence':'Low Confidence'}</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+    if(lowConf) h+=`<div class="disc-box mb-5">
+      <div class="flex items-start gap-3">
+        <span class="text-yellow-400 text-lg mt-0.5 flex-shrink-0">⚠️</span>
+        <div>
+          <div class="font-semibold text-yellow-300 mb-1">Low Confidence Warning</div>
+          <div class="text-sm text-yellow-200/70">Confidence is ${cpct}%. Do not make treatment decisions based on this result alone. Upload a clearer, better-lit image or consult an agricultural expert.</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // Heatmap
+  if(result.imgDataURL && !unreliable){
+    h+=`<div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+      <div class="glass rounded-2xl p-4">
+        <div class="text-sm font-semibold text-gray-300 mb-3">Original Image</div>
+        <div class="rounded-xl overflow-hidden bg-black flex items-center justify-center" style="aspect-ratio:4/3;max-height:240px">
+          <img src="${result.imgDataURL}" class="max-h-60 max-w-full object-contain rounded-xl" alt="Leaf"/>
+        </div>
+      </div>
+      <div class="glass rounded-2xl p-4">
+        <div class="flex items-center justify-between mb-3">
+          <div class="text-sm font-semibold text-gray-300">Grad-CAM Heatmap</div>
+          <span class="tag t-demo text-xs">Simulated</span>
+        </div>
+        <div class="relative rounded-xl overflow-hidden bg-black flex items-center justify-center" style="aspect-ratio:4/3;max-height:240px">
+          <img id="hmap-img" src="${result.imgDataURL}" class="max-h-60 max-w-full object-contain rounded-xl" alt="Heatmap"/>
+          <canvas id="hmap-cv" class="hmap-canvas"></canvas>
+        </div>
+        <div class="mt-2 text-xs text-gray-500">Warm colors show regions the AI focused on. Red/yellow = high activation.</div>
+      </div>
+    </div>`;
+  }
+
+  // Severity
+  if(result.sevPct!==null && sl){
+    h+=`<div class="glass rounded-2xl p-6 mb-5">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-semibold text-white">Severity Estimation</h3>
+        <span class="tag text-xs font-bold" style="background:${sl.col}22;color:${sl.col};border-color:${sl.col}44">${sl.label}</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5 items-center">
+        <div>
+          <div class="flex items-baseline gap-2 mb-3"><span class="text-4xl font-black" style="color:${sl.col}">${result.sevPct}%</span><span class="text-gray-500 text-sm">affected area (estimated)</span></div>
+          <div class="sev-bar mb-3"><div id="sev-bar-fill" class="sev-fill" style="width:0%;background:${sl.col}"></div></div>
+          <div class="text-xs text-gray-500">Formula: lesion pixels ÷ total leaf pixels × 100. This is an <strong class="text-gray-400">estimated severity</strong>, not a confirmed agronomic measurement. Available for rice diseases only.</div>
+        </div>
+        <div class="space-y-1.5">
+          ${SEV_LEVELS.map(lv=>`<div class="flex items-center gap-2.5">
+            <div class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background:${lv.col}"></div>
+            <div class="text-xs text-gray-400 w-20">${lv.label}</div>
+            <div class="flex-1 sev-bar"><div class="sev-fill" style="width:${lv.max===0?0:Math.min(100,lv.max)}%;background:${lv.col}"></div></div>
+            <div class="text-xs text-gray-600 w-14 text-right">${lv.max===0?'0%':lv.max>=100?'>65%':`${lv.min}–${lv.max}%`}</div>
+          </div>`).join('')}
+        </div>
+      </div>
+    </div>`;
+  } else if(!unreliable && !result.healthy){
+    h+=`<div class="glass rounded-2xl p-5 mb-5">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl flex-shrink-0">📊</span>
+        <div class="flex-1">
+          <div class="font-semibold text-white mb-0.5">Severity Estimation</div>
+          <div class="text-sm text-gray-400">Severity estimation is currently unavailable for <strong class="text-gray-300">${result.cropName} — ${result.condName}</strong>. It is only available for supported rice diseases with lesion mask annotations.</div>
+        </div>
+        <span class="tag t-na text-xs flex-shrink-0">Unavailable</span>
+      </div>
+    </div>`;
+  }
+
+  // Recommendations
+  const recColors={success:'#16a34a',warning:'#d97706',danger:'#dc2626',info:'#2563eb'};
+  const recBg={success:'rgba(22,163,74,0.08)',warning:'rgba(217,119,6,0.08)',danger:'rgba(220,38,38,0.08)',info:'rgba(37,99,235,0.08)'};
+  const recText={success:'#86efac',warning:'#fcd34d',danger:'#fca5a5',info:'#93c5fd'};
+  h+=`<div class="glass rounded-2xl p-6 mb-5">
+    <h3 class="font-semibold text-white mb-4">Recommended Actions</h3>
+    <div class="space-y-3">
+      ${result.recs.map(r=>`<div class="rec-card" style="border-left-color:${recColors[r.t]};background:${recBg[r.t]}">
+        <div class="flex items-start gap-3">
+          <span class="text-lg flex-shrink-0">${r.i}</span>
+          <div><div class="font-semibold mb-0.5 text-sm" style="color:${recText[r.t]}">${r.h}</div><div class="text-sm text-gray-400">${r.b}</div></div>
+        </div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+
+  // Disclaimer
+  h+=`<div class="disc-box mb-5">
+    <div class="flex items-start gap-3">
+      <span class="text-yellow-400 text-lg mt-0.5 flex-shrink-0">⚠️</span>
+      <div>
+        <div class="font-semibold text-yellow-300 mb-1">Important Disclaimer</div>
+        <div class="text-sm text-yellow-200/70">AgriShield provides AI-assisted crop health analysis. Results may be incorrect and should be confirmed by a qualified agricultural expert before treatment decisions are made. This result is demo data and does not reflect real AI model output.</div>
+      </div>
+    </div>
+  </div>`;
+
+  // Actions
+  h+=`<div class="flex flex-wrap gap-3">
+    <button onclick="saveCurrentScan()" class="btn-p px-5 py-3 rounded-xl text-sm flex items-center gap-2"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/></svg>Save to History</button>
+    <button onclick="dlReport()" class="btn-o px-5 py-3 rounded-xl text-sm flex items-center gap-2"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download Report</button>
+    <button onclick="nav('analyze')" class="btn-o px-5 py-3 rounded-xl text-sm flex items-center gap-2"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1,4 1,10 7,10"/><path d="M3.51 15a9 9 0 1 0 .49-3.37"/></svg>Analyze Another</button>
+    <button onclick="feedback(true)" class="btn-o px-4 py-3 rounded-xl text-sm" style="color:#4ade80;border-color:rgba(34,197,94,0.35)">👍 Useful</button>
+    <button onclick="feedback(false)" class="btn-o px-4 py-3 rounded-xl text-sm" style="color:#9ca3af;border-color:rgba(107,114,128,0.3)">👎 Incorrect</button>
+  </div>`;
+
+  el.innerHTML=h;
+
+  // Draw heatmap after DOM
+  if(result.hmap && result.imgDataURL && !unreliable) setTimeout(()=>drawHmap(result),350);
+  // Animate severity bar
+  if(result.sevPct!==null) setTimeout(()=>{ const b=document.getElementById('sev-bar-fill'); if(b) b.style.width=result.sevPct+'%'; },450);
+}
+
+// ════════════════════════════════════
+// HEATMAP CANVAS
+// ════════════════════════════════════
+function heatCol(v){
+  if(v<0.25) return {r:0,g:0,b:Math.round(v*4*255)};
+  if(v<0.5)  return {r:0,g:Math.round((v-0.25)*4*255),b:255};
+  if(v<0.75) return {r:Math.round((v-0.5)*4*255),g:255,b:Math.round((1-(v-0.5)*4)*255)};
+  return {r:255,g:Math.round((1-(v-0.75)*4)*255),b:0};
+}
+
+function drawHmap(result){
+  const cv=document.getElementById('hmap-cv'), img=document.getElementById('hmap-img');
+  if(!cv||!img) return;
+  const container=img.parentElement;
+  cv.width=container.offsetWidth; cv.height=container.offsetHeight;
+  const ctx=cv.getContext('2d');
+  const map=result.hmap, R=map.length, C=map[0].length;
+  const cw=cv.width/C, ch=cv.height/R;
+  for(let r=0;r<R;r++) for(let c=0;c<C;c++){
+    const v=map[r][c]; if(v<0.06) continue;
+    const {r:cr,g:cg,b:cb}=heatCol(v);
+    ctx.fillStyle=`rgba(${cr},${cg},${cb},${v*0.7})`;
+    ctx.fillRect(c*cw,r*ch,cw+1,ch+1);
+  }
+  cv.classList.add('vis');
+}
+
+// ════════════════════════════════════
+// HISTORY
+// ════════════════════════════════════
+function loadHist(){ try{ S.history=JSON.parse(localStorage.getItem(STORE_KEY))||[]; }catch{ S.history=[]; } }
+
+function saveHist(result){
+  loadHist();
+  S.history.unshift({
+    scanId:result.scanId, timestamp:result.timestamp,
+    crop:result.crop, cropName:result.cropName, cropEmoji:result.cropEmoji,
+    cond:result.cond, condName:result.condName,
+    healthy:result.healthy, conf:result.conf, cState:result.cState,
+    sevPct:result.sevPct, sevLabel:result.sevLabel, isDemoData:true,
+  });
+  if(S.history.length>50) S.history=S.history.slice(0,50);
+  localStorage.setItem(STORE_KEY,JSON.stringify(S.history));
+}
+
+function saveCurrentScan(){ if(!S.result) return; saveHist(S.result); toast('Scan saved to history!','success'); }
+function clearHistory(){ if(!confirm('Clear all scan history?')) return; S.history=[]; localStorage.removeItem(STORE_KEY); renderHist(); toast('History cleared.','info'); }
+
+function filterHist(f){
+  S.histFilter=f;
+  document.querySelectorAll('.filt-btn').forEach(b=>{ const act=b.dataset.f===f; b.className=act?'filt-btn btn-p px-4 py-2 rounded-lg text-sm':'filt-btn btn-o px-4 py-2 rounded-lg text-sm'; });
+  renderHistList();
+}
+
+function renderHist(){ loadHist(); renderHistList(); renderHistChart(); }
+
+function renderHistList(){
+  const el=document.getElementById('hist-list');
+  const filt=S.histFilter==='all'?S.history:S.history.filter(s=>s.crop===S.histFilter);
+  if(!filt.length){
+    el.innerHTML=`<div class="text-center py-20 text-gray-500">
+      <div class="text-4xl mb-4">${S.history.length===0?'🌿':'🔍'}</div>
+      <div class="font-medium text-gray-400 mb-2">${S.history.length===0?'No scans yet':'No results for this filter'}</div>
+      <div class="text-sm mb-4">${S.history.length===0?'Analyze your first leaf to see history here.':'Try a different filter.'}</div>
+      ${S.history.length===0?`<button onclick="nav('analyze')" class="btn-p px-6 py-2.5 rounded-xl text-sm">Analyze a Leaf →</button>`:''}
+    </div>`;
+    return;
+  }
+  el.innerHTML=filt.map(s=>{
+    const dt=new Date(s.timestamp);
+    const ds=dt.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+    const ts=dt.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+    const badge=s.cState==='unreliable'?`<span class="tag t-warn text-xs">Unreliable</span>`:s.healthy?`<span class="tag t-ok text-xs">Healthy</span>`:`<span class="tag t-bad text-xs">Disease</span>`;
+    const sev=s.sevPct!==null?`<span class="text-xs text-gray-500">Severity: ${s.sevLabel} (${s.sevPct}%)</span>`:'';
+    const col=s.conf>=0.7?'#22c55e':s.conf>=0.55?'#f59e0b':'#ef4444';
+    return `<div class="hist-card glass-sm rounded-xl p-4 mb-3" style="border:1px solid rgba(26,42,26,1)">
+      <div class="flex items-center gap-4">
+        <span class="text-2xl flex-shrink-0">${s.cropEmoji||'🌿'}</span>
+        <div class="flex-1 min-w-0">
+          <div class="flex flex-wrap items-center gap-2 mb-0.5"><span class="font-semibold text-white text-sm">${s.cropName}</span>${badge}</div>
+          <div class="text-sm text-gray-400">${s.condName}</div>
+          ${sev}
+        </div>
+        <div class="text-right text-xs text-gray-500 flex-shrink-0">
+          <div>${ds}</div><div>${ts}</div>
+          <div class="mt-1 font-semibold" style="color:${col}">${Math.round((s.conf||0)*100)}% conf</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderHistChart(){
+  const wrap=document.getElementById('hist-chart-wrap');
+  const riceWithSev=S.history.filter(s=>s.crop==='rice'&&s.sevPct!==null);
+  if(riceWithSev.length<2){ wrap.classList.add('hidden'); return; }
+  wrap.classList.remove('hidden');
+  if(S.chart){ S.chart.destroy(); S.chart=null; }
+  const sorted=[...riceWithSev].sort((a,b)=>a.timestamp-b.timestamp);
+  const labels=sorted.map(s=>new Date(s.timestamp).toLocaleDateString('en-IN',{day:'numeric',month:'short'}));
+  const data=sorted.map(s=>s.sevPct);
+  S.chart=new Chart(document.getElementById('hist-chart'),{
+    type:'line',
+    data:{labels,datasets:[{label:'Rice Severity %',data,borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,0.12)',tension:.4,pointRadius:5,pointHoverRadius:8,fill:true,borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#9ca3af',font:{family:'Inter',size:12}}},tooltip:{backgroundColor:'rgba(13,24,13,0.95)',borderColor:'rgba(34,197,94,0.3)',borderWidth:1,titleColor:'#f0fdf4',bodyColor:'#9ca3af'}},
+      scales:{x:{ticks:{color:'#6b7280',font:{family:'Inter'}},grid:{color:'rgba(255,255,255,0.04)'}},y:{min:0,max:100,ticks:{color:'#6b7280',font:{family:'Inter'},callback:v=>v+'%'},grid:{color:'rgba(255,255,255,0.04)'},title:{display:true,text:'Severity %',color:'#6b7280',font:{family:'Inter'}}}}}
+  });
+}
+
+// ════════════════════════════════════
+// ACTIONS
+// ════════════════════════════════════
+function dlReport(){
+  const r=S.result; if(!r) return;
+  const dt=new Date(r.timestamp).toLocaleString('en-IN');
+  const txt=`AgriShield Analysis Report
+Generated: ${dt}
+INFERENCE MODE: Mock / Demo — NOT real AI output
+
+CROP: ${r.cropName||'Unknown'}
+CONDITION: ${r.condName}
+HEALTH STATUS: ${r.healthy===null?'Unable to determine':r.healthy?'Healthy':'Disease Detected'}
+CONFIDENCE: ${Math.round((r.conf||0)*100)}% [${r.cState}]
+SEVERITY: ${r.sevPct!==null?r.sevLabel+' ('+r.sevPct+'%)':'Unavailable for this crop/condition'}
+
+DESCRIPTION:
+${r.desc||'N/A'}
+
+RECOMMENDED ACTIONS:
+${r.recs.map((rec,i)=>`${i+1}. [${rec.t.toUpperCase()}] ${rec.h}\n   ${rec.b}`).join('\n')}
+
+SEVERITY SCALE (Rice diseases only):
+  Healthy:    0%
+  Mild:       0.1%–10%
+  Moderate:   10.1%–25%
+  High:       25.1%–45%
+  Very High:  45.1%–65%
+  Critical:   >65%
+
+DISCLAIMER:
+AgriShield provides AI-assisted crop health analysis. Results may be incorrect
+and should be confirmed by a qualified agricultural expert before treatment
+decisions are made. This result was generated by a mock inference pipeline and
+does not reflect real model output.
+
+DATASETS REFERENCED:
+  • Paddy Doctor (paddydoc.github.io)
+  • PlantVillage (github.com/spMohanty/PlantVillage-Dataset)
+  • PlantDoc (github.com/pratikkayal/PlantDoc-Dataset)
+  • ICAR Rice & Maize Dataset (aikosh.indiaai.gov.in)
+  • Rice Disease Segmentation (pmc.ncbi.nlm.nih.gov/articles/PMC9695445/)
+
+MODEL ARCHITECTURE (planned):
+  Classifier:    EfficientNet-B0 / MobileNetV3
+  Segmentation:  U-Net / DeepLabV3+ (rice only)
+  Explainability: Grad-CAM
+  INFERENCE_MODE=${process?'real':'mock'}
+`;
+  const blob=new Blob([txt],{type:'text/plain'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`agrishield_${r.scanId}.txt`;
+  a.click(); URL.revokeObjectURL(a.href);
+  toast('Report downloaded!','success');
+}
+
+function feedback(pos){ toast(pos?'👍 Thank you for your feedback!':'👎 Noted — we\'ll use this to improve.', pos?'success':'info'); }
+
+// ════════════════════════════════════
+// TOAST
+// ════════════════════════════════════
+let tcnt=0;
+function toast(msg,type='info'){
+  const id='t'+(++tcnt);
+  const cols={success:'rgba(22,163,74,0.12)',warning:'rgba(217,119,6,0.12)',danger:'rgba(220,38,38,0.12)',info:'rgba(37,99,235,0.12)'};
+  const bords={success:'rgba(34,197,94,0.3)',warning:'rgba(245,158,11,0.3)',danger:'rgba(239,68,68,0.3)',info:'rgba(59,130,246,0.3)'};
+  const icons={success:'✅',warning:'⚠️',danger:'❌',info:'ℹ️'};
+  const el=document.createElement('div');
+  el.id=id;
+  el.style.cssText=`background:${cols[type]||cols.info};border:1px solid ${bords[type]||bords.info};backdrop-filter:blur(20px);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;opacity:0;transform:translateX(100%);transition:all .3s ease`;
+  el.innerHTML=`<span style="font-size:16px;flex-shrink:0">${icons[type]||icons.info}</span><span style="font-size:13px;color:#e5e7eb;flex:1">${msg}</span><button onclick="this.parentElement.remove()" style="background:none;border:none;color:#6b7280;cursor:pointer;font-size:16px;padding:0;line-height:1">×</button>`;
+  document.getElementById('toasts').appendChild(el);
+  requestAnimationFrame(()=>{ el.style.opacity='1'; el.style.transform='translateX(0)'; });
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateX(100%)'; setTimeout(()=>el.remove(),300); },4500);
+}
+
+// ════════════════════════════════════
+// INIT
+// ════════════════════════════════════
+function init(){
+  loadHist();
+  nav('home');
+  window.addEventListener('scroll',()=>{
+    const nb=document.getElementById('navbar');
+    nb.style.background=window.scrollY>30?'rgba(6,13,6,0.97)':'';
+  });
+}
+
+// process is not available in browser — define fallback
+const process={env:{INFERENCE_MODE:'mock'}};
+
+document.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
