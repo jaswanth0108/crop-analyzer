@@ -31,8 +31,9 @@ with open('/root/.kaggle/kaggle.json', 'w') as f:
 
 # ── Cell 4: Clone AgriShield repo & prepare dataset ───────────────────────
 """
+!rm -rf /content/agrishield
 !git clone --depth 1 https://github.com/jaswanth0108/crop-analyzer.git /content/agrishield
-%cd /content/agrishield/agrishield/ml
+%cd /content/agrishield/ml
 !pip install -q -r requirements.txt
 !python 1_prepare_dataset.py
 """
