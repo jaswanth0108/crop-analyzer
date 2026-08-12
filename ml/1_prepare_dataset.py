@@ -133,8 +133,8 @@ def prepare_plantvillage() -> None:
         print("  ⚠  'datasets' not installed. Run: pip install datasets")
         return
 
-    print("  Downloading PlantVillage (color variant)…")
-    ds = load_dataset("mohanty/PlantVillage", "color", trust_remote_code=True)
+    print("  Downloading PlantVillage…")
+    ds = load_dataset("mohanty/PlantVillage", "default")
 
     total = 0
     skipped = 0
