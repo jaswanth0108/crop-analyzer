@@ -113,7 +113,7 @@ def run_epoch(model, loader, criterion, optimizer, scaler, device, is_train: boo
             imgs   = imgs.to(device, non_blocking=True)
             labels = labels.to(device, non_blocking=True)
 
-            with autocast(device_type="cuda", enabled=device.type == "cuda"):
+            with torch.autocast(device_type=device.type, enabled=device.type == "cuda"):
                 logits = model(imgs)
                 loss   = criterion(logits, labels)
 
@@ -187,7 +187,7 @@ def main(args):
     criterion = nn.CrossEntropyLoss(label_smoothing=cfg["label_smooth"])
     optimizer = AdamW(model.parameters(), lr=cfg["lr"], weight_decay=cfg["weight_decay"])
     scheduler = CosineAnnealingLR(optimizer, T_max=cfg["epochs"])
-    scaler    = GradScaler(enabled=device.type == "cuda")
+    scaler    = torch.amp.GradScaler(device.type, enabled=device.type == "cuda")
 
     log_rows = []
     for epoch in range(start_epoch, cfg["epochs"]):
