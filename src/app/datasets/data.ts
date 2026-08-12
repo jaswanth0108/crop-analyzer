@@ -1,84 +1,126 @@
+// ============================================================
+// AgriShield — Dataset Registry (All 4 sources)
+// ============================================================
+
 export interface DatasetInfo {
   id: string;
   name: string;
-  sourceLink: string;
-  crops: string[];
-  diseasesCovered: number;
-  purpose: string;
-  modelArchitecture: string;
+  shortName: string;
+  url: string;
+  description: string;
+  numImages: number;
+  numSpecies: number;
+  numClasses: number;
   license: string;
+  year: number;
+  citation: string;
   limitations: string[];
+  coverage: string[];
 }
 
 export const DATASETS: DatasetInfo[] = [
   {
-    id: "paddy-doctor",
-    name: "Paddy Doctor",
-    sourceLink: "https://paddydoc.github.io/dataset/",
-    crops: ["Rice"],
-    diseasesCovered: 4,
-    purpose: "Primary rice/paddy disease classification and India-focused field image validation.",
-    modelArchitecture: "EfficientNet-B0 / MobileNetV3",
-    license: "Open (Academic/Research)",
+    id: "plantvillage",
+    name: "PlantVillage Dataset",
+    shortName: "PlantVillage",
+    url: "https://github.com/spMohanty/PlantVillage-Dataset",
+    description:
+      "One of the largest publicly available agricultural image datasets, with 54,306 controlled-environment images of healthy and diseased plant leaves across 14 crop species and 26 disease conditions. The foundation of this model.",
+    numImages: 54306,
+    numSpecies: 14,
+    numClasses: 38,
+    license: "CC BY 4.0",
+    year: 2016,
+    citation:
+      'Mohanty, S.P., Hughes, D.P., Salathé, M. (2016). "Using Deep Learning for Image-Based Plant Disease Detection." Frontiers in Plant Science.',
     limitations: [
-      "Healthy, disease, and pest labels must be kept strictly separate during training.",
-      "Requires label normalization before merging with other datasets.",
+      "Lab/controlled environment images — may not generalise to field conditions",
+      "No background clutter or occlusion",
+      "Images taken under uniform lighting",
+    ],
+    coverage: [
+      "Apple (4 classes)", "Blueberry (1)", "Cherry (2)", "Corn/Maize (4)",
+      "Grape (4)", "Orange (1)", "Peach (2)", "Bell Pepper (2)",
+      "Potato (3)", "Raspberry (1)", "Soybean (1)", "Squash (1)",
+      "Strawberry (2)", "Tomato (10)",
     ],
   },
   {
-    id: "plantvillage",
-    name: "PlantVillage",
-    sourceLink: "https://github.com/spMohanty/PlantVillage-Dataset",
-    crops: ["Tomato", "Potato"],
-    diseasesCovered: 6,
-    purpose: "Initial tomato and potato classification baseline.",
-    modelArchitecture: "EfficientNet-B0",
-    license: "CC0 (Public Domain)",
+    id: "new_plant_diseases",
+    name: "New Plant Diseases Dataset",
+    shortName: "NPD (Kaggle)",
+    url: "https://www.kaggle.com/datasets/vipoooool/new-plant-diseases-dataset",
+    description:
+      "An augmented version of PlantVillage with 87,000+ images across 38 classes, expanded with flipping, Gaussian noise, rotation, and zoom augmentation for better model generalisation.",
+    numImages: 87867,
+    numSpecies: 14,
+    numClasses: 38,
+    license: "CC BY 4.0",
+    year: 2020,
+    citation:
+      "Vipoooool. (2020). New Plant Diseases Dataset. Kaggle. https://www.kaggle.com/datasets/vipoooool/new-plant-diseases-dataset",
     limitations: [
-      "Laboratory conditions (solid backgrounds) may not generalize perfectly to field conditions.",
-      "Used only specific filtered classes per project spec.",
+      "Derived from PlantVillage — inherits lab-environment limitations",
+      "Augmentation may introduce synthetic artefacts",
+    ],
+    coverage: [
+      "Same 14 species as PlantVillage",
+      "Pre-split train/val set included",
+      "Expanded via image augmentation",
     ],
   },
   {
     id: "plantdoc",
-    name: "PlantDoc",
-    sourceLink: "https://github.com/pratikkayal/PlantDoc-Dataset",
-    crops: ["Multiple"],
-    diseasesCovered: 13, // Overall, though we use specific ones
-    purpose: "Real-world validation, natural background testing, and external validation to measure generalization.",
-    modelArchitecture: "EfficientNet-B0",
-    license: "MIT",
+    name: "PlantDoc Dataset",
+    shortName: "PlantDoc",
+    url: "https://github.com/pratikkayal/PlantDoc-Dataset",
+    description:
+      "2,569 field-realistic images scraped from the web across 13 plant species and 17 disease conditions. Unlike PlantVillage, these images include real-world backgrounds, partial occlusion, and varying lighting — making the model more robust to real field photographs.",
+    numImages: 2569,
+    numSpecies: 13,
+    numClasses: 17,
+    license: "CC BY 4.0",
+    year: 2019,
+    citation:
+      'Singh, D., Jain, N., Jain, P., et al. (2020). "PlantDoc: A Dataset for Visual Plant Disease Detection." CoDS-COMAD 2020.',
     limitations: [
-      "Used primarily as an external validation set rather than primary training.",
-      "High variance in image quality.",
+      "Smaller dataset — less representation per class",
+      "Web-scraped images may contain noise or mislabels",
+    ],
+    coverage: [
+      "Apple, Blueberry, Cherry, Corn, Grape, Peach, Pepper, Potato",
+      "Raspberry, Soybean, Squash, Strawberry, Tomato",
+      "Real field conditions with background clutter",
     ],
   },
   {
-    id: "icar",
-    name: "ICAR Rice and Maize Dataset",
-    sourceLink: "https://aikosh.indiaai.gov.in/home/datasets/details/crop_disease_and_insect_pest_image_dataset_for_rice_and_maize.html",
-    crops: ["Rice"],
-    diseasesCovered: 4,
-    purpose: "External validation for India-specific real agricultural conditions.",
-    modelArchitecture: "Validation Only",
-    license: "ICAR Data Use License",
+    id: "paddy_doctor",
+    name: "Paddy Doctor Dataset",
+    shortName: "Paddy Doctor",
+    url: "https://paddydoc.github.io/dataset/",
+    description:
+      "16,225 annotated images of rice/paddy leaves covering 12 disease and pest conditions plus healthy leaves. The most comprehensive publicly available paddy disease dataset, covering bacterial, fungal, and pest categories unique to rice cultivation.",
+    numImages: 16225,
+    numSpecies: 1,
+    numClasses: 13,
+    license: "CC BY 4.0",
+    year: 2022,
+    citation:
+      'Petchiammal, A., et al. (2022). "Paddy Doctor: A Visual Image Dataset for Automated Paddy Disease Classification and Benchmarking." ACM MM 2022.',
     limitations: [
-      "Requires verified access permission.",
-      "Not used automatically for training without manual review.",
+      "Rice/paddy only — does not cover other crops",
+      "Regional focus (South/South-East Asian varieties)",
     ],
-  },
-  {
-    id: "rice-seg",
-    name: "Rice Disease Segmentation Dataset",
-    sourceLink: "https://pmc.ncbi.nlm.nih.gov/articles/PMC9695445/",
-    crops: ["Rice"],
-    diseasesCovered: 3,
-    purpose: "Lesion segmentation and rice severity estimation based on affected pixel area.",
-    modelArchitecture: "U-Net / DeepLabV3+",
-    license: "Academic/Research",
-    limitations: [
-      "Labels exist only for specific rice diseases (Blight, Blast, Brown Spot).",
-      "Severity estimation cannot be generalized to unsupported crops.",
+    coverage: [
+      "Bacterial Leaf Blight, Bacterial Leaf Streak, Bacterial Panicle Blight",
+      "Blast, Brown Spot, Downy Mildew, Hispa, Leaf Roller",
+      "Tungro, Black/White/Yellow Stem Borer, Healthy",
     ],
   },
 ];
+
+export const DATASET_TOTALS = {
+  totalImages: DATASETS.reduce((a, d) => a + d.numImages, 0),
+  totalSpecies: 15, // unique after merging
+  totalClasses: 48, // unique after label normalization
+};

@@ -1,148 +1,175 @@
-"use client";
+import { SUPPORTED_CONDITIONS, UNIQUE_SPECIES, getConditionsForSpecies } from "@/lib/supported-conditions";
+import { DATASET_TOTALS } from "@/app/datasets/data";
+import type { Metadata } from "next";
 
-import { useMemo } from "react";
-import { Check, X, Info } from "lucide-react";
-import { SUPPORTED_CONDITIONS, CROP_COLORS, CROP_EMOJIS } from "@/lib/supported-conditions";
+export const metadata: Metadata = {
+  title: "Supported Crops & Diseases — AgriShield",
+  description:
+    "Full list of 15 crop species and 48 disease conditions that AgriShield can detect, sourced from PlantVillage, PlantDoc, Paddy Doctor, and New Plant Diseases datasets.",
+};
 
 export default function SupportedCropsPage() {
-  // Group conditions by crop
-  const grouped = useMemo(() => {
-    const map: Record<string, typeof SUPPORTED_CONDITIONS> = {};
-    for (const c of SUPPORTED_CONDITIONS) {
-      if (!map[c.crop]) map[c.crop] = [];
-      map[c.crop].push(c);
-    }
-    return map;
-  }, []);
-
   return (
     <div style={{ minHeight: "calc(100vh - 64px)", background: "var(--bg-base)", padding: "48px 0 80px" }}>
-      <div className="section-container" style={{ maxWidth: "1000px" }}>
-        
-        <div style={{ textAlign: "center", marginBottom: "48px", animation: "fade-in-up 0.4s ease both" }}>
-          <h1 className="font-display" style={{ fontSize: "clamp(1.8rem, 3vw, 2.8rem)", fontWeight: 900, marginBottom: "16px" }}>
-            Supported <span className="gradient-text">Crops & Conditions</span>
+      <div className="section-container" style={{ maxWidth: "1100px" }}>
+
+        {/* Header */}
+        <div style={{ textAlign: "center", marginBottom: "56px" }}>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "6px 16px",
+              background: "rgba(16,185,129,0.08)",
+              border: "1px solid rgba(16,185,129,0.25)",
+              borderRadius: "100px",
+              marginBottom: "20px",
+              fontSize: "0.8rem",
+              color: "#10b981",
+              fontWeight: 600,
+            }}
+          >
+            <span>🌿</span>
+            <span>Dataset-driven Coverage</span>
+          </div>
+          <h1
+            className="font-display"
+            style={{ fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 900, marginBottom: "16px" }}
+          >
+            <span className="gradient-text">Supported</span> Crops & Diseases
           </h1>
-          <p style={{ color: "var(--text-secondary)", fontSize: "1.05rem", maxWidth: "600px", margin: "0 auto" }}>
-            AgriShield is trained to detect 13 specific crop conditions across 3 crops. 
-            We do not attempt to classify conditions outside this validated set.
+          <p style={{ color: "var(--text-secondary)", fontSize: "1.05rem", maxWidth: "640px", margin: "0 auto" }}>
+            AgriShield is trained on <strong style={{ color: "var(--text-primary)" }}>{DATASET_TOTALS.totalImages.toLocaleString()} images</strong> across <strong style={{ color: "var(--text-primary)" }}>{DATASET_TOTALS.totalSpecies} crop species</strong> and <strong style={{ color: "var(--text-primary)" }}>{DATASET_TOTALS.totalClasses} disease conditions</strong> from 4 research datasets.
           </p>
         </div>
 
-        <div style={{ display: "grid", gap: "40px" }}>
-          {Object.entries(grouped).map(([cropKey, conditions], idx) => {
-            const cropName = conditions[0].cropDisplay;
-            const emoji = CROP_EMOJIS[cropKey] || "🌱";
-            const color = CROP_COLORS[cropKey] || "#10b981";
+        {/* Stats bar */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: "16px",
+            marginBottom: "48px",
+          }}
+        >
+          {[
+            { label: "Crop Species", value: DATASET_TOTALS.totalSpecies, icon: "🌱" },
+            { label: "Disease Conditions", value: DATASET_TOTALS.totalClasses, icon: "🔬" },
+            { label: "Training Images", value: DATASET_TOTALS.totalImages.toLocaleString(), icon: "📸" },
+          ].map((stat) => (
+            <div
+              key={stat.label}
+              className="card"
+              style={{ padding: "24px", textAlign: "center" }}
+            >
+              <div style={{ fontSize: "2rem", marginBottom: "8px" }}>{stat.icon}</div>
+              <div
+                className="font-display"
+                style={{ fontSize: "clamp(1.8rem, 3vw, 2.4rem)", fontWeight: 900, color: "var(--text-primary)", marginBottom: "4px" }}
+              >
+                {stat.value}
+              </div>
+              <div style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>{stat.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Per-species breakdown */}
+        <h2 className="font-display" style={{ fontSize: "1.4rem", fontWeight: 800, marginBottom: "24px" }}>
+          Crop-by-Crop Breakdown
+        </h2>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          {UNIQUE_SPECIES.map((species) => {
+            const conditions = getConditionsForSpecies(species);
+            const diseases = conditions.filter((c) => !c.isHealthy);
+            const emoji = conditions[0]?.emoji ?? "🌱";
+            const sources = [...new Set(conditions.flatMap((c) => c.sources))];
 
             return (
-              <div
-                key={cropKey}
-                className="card"
-                style={{
-                  overflow: "hidden",
-                  animation: `fade-in-up 0.5s ease ${idx * 0.1}s both`,
-                }}
-              >
-                {/* Crop Header */}
-                <div
-                  style={{
-                    background: `linear-gradient(90deg, ${color}15, transparent)`,
-                    borderBottom: "1px solid var(--border-card)",
-                    padding: "24px 32px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "12px",
-                  }}
-                >
-                  <span style={{ fontSize: "2rem" }}>{emoji}</span>
-                  <h2 style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--text-primary)", margin: 0 }}>
-                    {cropName}
-                  </h2>
-                </div>
-
-                {/* Table */}
-                <div style={{ overflowX: "auto" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "600px" }}>
-                    <thead>
-                      <tr style={{ background: "var(--bg-elevated)", borderBottom: "1px solid var(--border-card)" }}>
-                        <th style={{ padding: "16px 32px", textAlign: "left", fontSize: "0.85rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase" }}>Condition</th>
-                        <th style={{ padding: "16px 32px", textAlign: "left", fontSize: "0.85rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase" }}>Severity Estimation</th>
-                        <th style={{ padding: "16px 32px", textAlign: "left", fontSize: "0.85rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase" }}>Dataset Source</th>
-                        <th style={{ padding: "16px 32px", textAlign: "left", fontSize: "0.85rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase" }}>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {conditions.map((c, i) => (
-                        <tr
-                          key={c.condition}
+              <div key={species} className="card" style={{ padding: "24px" }}>
+                {/* Species header */}
+                <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "20px", flexWrap: "wrap" }}>
+                  <span style={{ fontSize: "2.2rem" }}>{emoji}</span>
+                  <div style={{ flex: 1 }}>
+                    <h3 className="font-display" style={{ fontSize: "1.15rem", fontWeight: 800, marginBottom: "4px" }}>
+                      {species}
+                    </h3>
+                    <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                      {sources.map((src) => (
+                        <span
+                          key={src}
                           style={{
-                            borderBottom: i === conditions.length - 1 ? "none" : "1px solid var(--border-subtle)",
-                            background: i % 2 === 0 ? "transparent" : "var(--bg-elevated)",
-                            transition: "background 0.2s"
+                            padding: "2px 10px",
+                            background: "rgba(59,130,246,0.08)",
+                            border: "1px solid rgba(59,130,246,0.2)",
+                            borderRadius: "100px",
+                            fontSize: "0.72rem",
+                            color: "#3b82f6",
+                            fontWeight: 600,
                           }}
                         >
-                          <td style={{ padding: "16px 32px", fontSize: "0.95rem", fontWeight: 600, color: "var(--text-primary)" }}>
-                            {c.conditionDisplay}
-                          </td>
-                          <td style={{ padding: "16px 32px", fontSize: "0.9rem" }}>
-                            {c.severityAvailable ? (
-                              <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "#10b981", background: "rgba(16,185,129,0.1)", padding: "4px 10px", borderRadius: "20px", fontWeight: 600 }}>
-                                <Check size={14} /> Available
-                              </span>
-                            ) : (
-                              <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "var(--text-muted)", background: "var(--bg-hover)", padding: "4px 10px", borderRadius: "20px", fontWeight: 500 }}>
-                                <X size={14} /> Unavailable
-                              </span>
-                            )}
-                          </td>
-                          <td style={{ padding: "16px 32px", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-                            {c.datasetSource}
-                          </td>
-                          <td style={{ padding: "16px 32px" }}>
-                            {c.status === "demo-only" ? (
-                              <span className="badge badge-warning">Demo Only</span>
-                            ) : c.status === "validated" ? (
-                              <span className="badge badge-accent">Validated</span>
-                            ) : (
-                              <span className="badge badge-neutral">Trained</span>
-                            )}
-                          </td>
-                        </tr>
+                          {src}
+                        </span>
                       ))}
-                    </tbody>
-                  </table>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "var(--text-primary)" }}>
+                      {diseases.length}
+                    </div>
+                    <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>diseases</div>
+                  </div>
+                </div>
+
+                {/* Conditions grid */}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                  {conditions.map((cond) => (
+                    <div
+                      key={cond.condition}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        padding: "5px 12px",
+                        background: cond.isHealthy
+                          ? "rgba(16,185,129,0.08)"
+                          : "rgba(255,255,255,0.03)",
+                        border: cond.isHealthy
+                          ? "1px solid rgba(16,185,129,0.25)"
+                          : "1px solid rgba(255,255,255,0.07)",
+                        borderRadius: "8px",
+                        fontSize: "0.82rem",
+                        color: cond.isHealthy ? "#10b981" : "var(--text-secondary)",
+                      }}
+                    >
+                      <span>{cond.isHealthy ? "✅" : "🔴"}</span>
+                      <span>{cond.conditionDisplay}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             );
           })}
         </div>
 
+        {/* Footer note */}
         <div
           style={{
-            display: "flex",
-            gap: "12px",
-            alignItems: "flex-start",
-            padding: "16px 20px",
-            background: "rgba(59,130,246,0.07)",
-            border: "1px solid rgba(59,130,246,0.2)",
+            marginTop: "48px",
+            padding: "20px 24px",
+            background: "rgba(245,158,11,0.07)",
+            border: "1px solid rgba(245,158,11,0.2)",
             borderRadius: "12px",
-            marginTop: "40px",
           }}
         >
-          <Info size={18} color="#3b82f6" style={{ flexShrink: 0, marginTop: "2px" }} />
-          <div>
-            <p style={{ color: "#3b82f6", fontWeight: 600, fontSize: "0.9rem", marginBottom: "4px" }}>
-              Why is severity estimation not available for all crops?
-            </p>
-            <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", lineHeight: 1.6, margin: 0 }}>
-              Severity estimation requires pixel-level lesion segmentation masks during model training. 
-              Currently, we only have reliable segmentation data for specific Rice/Paddy diseases. We will 
-              expand this capability to Tomato and Potato as high-quality segmentation datasets become available.
-            </p>
-          </div>
+          <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", lineHeight: 1.7, margin: 0 }}>
+            ⚠️ <strong style={{ color: "#f59e0b" }}>Important:</strong> AgriShield&apos;s detection is based on the visual patterns found in its training datasets. Accuracy may be lower for
+            crops not well-represented in the training data, field images with complex backgrounds, or rare disease variants not present in the datasets.
+            Always confirm AI results with a qualified agronomist before making treatment decisions.
+          </p>
         </div>
-
       </div>
     </div>
   );

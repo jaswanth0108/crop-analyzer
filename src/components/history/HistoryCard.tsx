@@ -2,11 +2,11 @@
 
 import { CheckCircle2, AlertTriangle, XCircle, HelpCircle, ChevronRight, Activity } from "lucide-react";
 import type { HistoryEntry, ConfidenceLevel } from "@/types/analysis";
-import { CROP_EMOJIS, CROP_COLORS } from "@/lib/supported-conditions";
+import { getSpeciesEmoji } from "@/lib/supported-conditions";
 
 interface Props {
   entry: HistoryEntry;
-  onClick: () => void;
+  onClick: (id: string) => void;
 }
 
 const CONFIDENCE_CONFIG: Record<
@@ -14,6 +14,7 @@ const CONFIDENCE_CONFIG: Record<
   { icon: React.ElementType; color: string }
 > = {
   high: { icon: CheckCircle2, color: "#10b981" },
+  medium: { icon: Activity, color: "#3b82f6" },
   low: { icon: AlertTriangle, color: "#f59e0b" },
   unreliable: { icon: XCircle, color: "#ef4444" },
   unsupported: { icon: HelpCircle, color: "#9ca3af" },
@@ -28,13 +29,13 @@ export default function HistoryCard({ entry, onClick }: Props) {
   const timeStr = date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
   const dateStr = date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
   
-  const cropEmoji = result.crop ? CROP_EMOJIS[result.crop] : "🌱";
-  const cropColor = result.crop ? CROP_COLORS[result.crop] : "#10b981";
+  const cropEmoji = result.crop ? getSpeciesEmoji(result.crop) : "🌱";
+  const cropColor = "#10b981";
 
   return (
     <div
       className="card card-hover"
-      onClick={onClick}
+      onClick={() => onClick(entry.id)}
       style={{
         padding: "16px",
         cursor: "pointer",

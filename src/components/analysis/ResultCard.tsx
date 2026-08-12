@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, AlertTriangle, XCircle, HelpCircle } from "lucide-react";
 import type { DiseaseResult, ConfidenceLevel } from "@/types/analysis";
-import { CROP_EMOJIS, CROP_COLORS } from "@/lib/supported-conditions";
+import { getSpeciesEmoji } from "@/lib/supported-conditions";
 
 interface Props {
   result: DiseaseResult;
@@ -15,6 +15,7 @@ const CONFIDENCE_CONFIG: Record<
   { icon: React.ElementType; color: string; label: string }
 > = {
   high: { icon: CheckCircle2, color: "#10b981", label: "High Confidence" },
+  medium: { icon: CheckCircle2, color: "#3b82f6", label: "Medium Confidence" },
   low: { icon: AlertTriangle, color: "#f59e0b", label: "Low Confidence" },
   unreliable: { icon: XCircle, color: "#ef4444", label: "Unreliable" },
   unsupported: { icon: HelpCircle, color: "#9ca3af", label: "Unsupported Image" },
@@ -35,8 +36,8 @@ export default function ResultCard({ result, imageUrl }: Props) {
     return () => clearTimeout(t);
   }, [pct]);
 
-  const cropEmoji = result.crop ? CROP_EMOJIS[result.crop] : "🌱";
-  const cropColor = result.crop ? CROP_COLORS[result.crop] : "#10b981";
+  const cropEmoji = result.crop ? getSpeciesEmoji(result.crop) : "🌱";
+  const cropColor = "#10b981"; // We use a unified emerald color for all dynamic crops now
 
   return (
     <div className="card" style={{ padding: "32px", display: "flex", gap: "32px", alignItems: "flex-start", flexWrap: "wrap" }}>

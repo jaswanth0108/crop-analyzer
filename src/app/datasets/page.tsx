@@ -31,14 +31,17 @@ export default function DatasetsPage() {
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "16px", marginBottom: "20px" }}>
                 <div>
                   <h2 style={{ fontSize: "1.4rem", fontWeight: 700, color: "var(--text-primary)", marginBottom: "4px" }}>
-                    {ds.name}
+                    {ds.name} ({ds.year})
                   </h2>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                     <span className="badge badge-accent">
-                      {ds.crops.join(", ")}
+                      {ds.numSpecies} Species
                     </span>
                     <span className="badge badge-neutral">
-                      {ds.diseasesCovered} Conditions
+                      {ds.numClasses} Conditions
+                    </span>
+                    <span className="badge badge-neutral">
+                      {ds.numImages.toLocaleString()} Images
                     </span>
                     <span className="badge badge-warning" style={{ background: "transparent" }}>
                       <FileText size={12} style={{ marginRight: "2px" }} /> {ds.license}
@@ -47,7 +50,7 @@ export default function DatasetsPage() {
                 </div>
                 
                 <a
-                  href={ds.sourceLink}
+                  href={ds.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn-ghost"
@@ -57,35 +60,37 @@ export default function DatasetsPage() {
                 </a>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px" }}>
-                <div>
-                  <h4 style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.9rem", color: "var(--text-primary)", marginBottom: "8px" }}>
-                    <Database size={16} color="var(--accent-primary)" /> Purpose & Usage
-                  </h4>
-                  <p style={{ fontSize: "0.9rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>
-                    {ds.purpose}
-                  </p>
-                </div>
-                
-                <div>
-                  <h4 style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.9rem", color: "var(--text-primary)", marginBottom: "8px" }}>
-                    <Cpu size={16} color="#84cc16" /> Model Architecture
-                  </h4>
-                  <p style={{ fontSize: "0.9rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>
-                    {ds.modelArchitecture}
-                  </p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "16px", marginBottom: "24px" }}>
+                <p style={{ fontSize: "0.95rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>
+                  {ds.description}
+                </p>
+                <div style={{ fontSize: "0.85rem", color: "var(--text-muted)", fontStyle: "italic" }}>
+                  Citation: {ds.citation}
                 </div>
               </div>
 
-              <div style={{ marginTop: "24px", paddingTop: "24px", borderTop: "1px solid var(--border-subtle)" }}>
-                <h4 style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.9rem", color: "#f59e0b", marginBottom: "12px" }}>
-                  <AlertTriangle size={16} /> Known Limitations
-                </h4>
-                <ul style={{ margin: 0, paddingLeft: "20px", color: "var(--text-secondary)", fontSize: "0.9rem", lineHeight: 1.6 }}>
-                  {ds.limitations.map((limit, i) => (
-                    <li key={i} style={{ marginBottom: "6px" }}>{limit}</li>
-                  ))}
-                </ul>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px" }}>
+                <div>
+                  <h4 style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.9rem", color: "var(--text-primary)", marginBottom: "8px" }}>
+                    <Database size={16} color="var(--accent-primary)" /> Coverage
+                  </h4>
+                  <ul style={{ margin: 0, paddingLeft: "20px", color: "var(--text-secondary)", fontSize: "0.9rem", lineHeight: 1.6 }}>
+                    {ds.coverage.map((cov, i) => (
+                      <li key={i} style={{ marginBottom: "6px" }}>{cov}</li>
+                    ))}
+                  </ul>
+                </div>
+                
+                <div>
+                  <h4 style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.9rem", color: "#f59e0b", marginBottom: "8px" }}>
+                    <AlertTriangle size={16} /> Known Limitations
+                  </h4>
+                  <ul style={{ margin: 0, paddingLeft: "20px", color: "var(--text-secondary)", fontSize: "0.9rem", lineHeight: 1.6 }}>
+                    {ds.limitations.map((limit, i) => (
+                      <li key={i} style={{ marginBottom: "6px" }}>{limit}</li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             </div>
           ))}

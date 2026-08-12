@@ -1,13 +1,17 @@
 // ============================================================
 // AgriShield — Core Type Definitions
+// Updated: CropType is now open string (any species the model detects)
 // ============================================================
 
-export type CropType = "rice" | "tomato" | "potato";
+// CropType is now any string species name returned by the model
+// Examples: "Apple", "Corn", "Rice", "Tomato", "Grape", etc.
+export type CropType = string;
 
 export type ConfidenceLevel =
   | "high"        // >= 0.70
-  | "low"         // 0.55 – 0.69
-  | "unreliable"  // < 0.55
+  | "medium"      // 0.45 – 0.69
+  | "low"         // 0.30 – 0.44
+  | "unreliable"  // < 0.30
   | "unsupported"; // unrecognised crop / unrelated image
 
 export type SeverityLabel =
@@ -17,7 +21,7 @@ export type SeverityLabel =
   | "high"
   | "very_high"
   | "critical"
-  | "unavailable"; // Severity not supported for this crop/condition
+  | "unavailable"; // Severity estimation not available for this condition
 
 export interface Recommendation {
   category: "immediate" | "treatment" | "prevention";
@@ -33,6 +37,7 @@ export interface DiseaseResult {
   conditionDisplay: string;
   confidence: number;          // 0.0 – 1.0
   confidenceLevel: ConfidenceLevel;
+  topPredictions?: TopPrediction[]; // Top-3 from model (real mode only)
   severityLabel: SeverityLabel;
   severityPercentage: number | null; // null when unavailable
   recommendations: Recommendation[];
@@ -41,6 +46,12 @@ export interface DiseaseResult {
   disclaimer: string;
   analysedAt: string; // ISO 8601 timestamp
   imageUrl?: string;  // object URL for display
+}
+
+export interface TopPrediction {
+  species: string;
+  conditionDisplay: string;
+  confidence: number;
 }
 
 export interface AnalysisError {
