@@ -121,56 +121,52 @@ def split_files(files: List[Path], val_ratio: float = 0.15) -> Tuple[List[Path],
     return shuffled[n_val:], shuffled[:n_val]
 
 
-# ── Dataset 1: PlantVillage via Hugging Face ───────────────────────────────
+# ── Dataset 1: PlantVillage via GitHub ──────────────────────────────────────
 
 def prepare_plantvillage() -> None:
     print("\n" + "="*60)
-    print("Dataset 1/4: PlantVillage (via Hugging Face)")
+    print("Dataset 1/4: PlantVillage (via GitHub)")
     print("="*60)
-    try:
-        from datasets import load_dataset
-    except ImportError:
-        print("  ⚠  'datasets' not installed. Run: pip install datasets")
-        return
 
-    print("  Downloading PlantVillage…")
-    ds = load_dataset("mohanty/PlantVillage", "default")
+    auto_dir = DATA / "plantvillage"
+    if not (auto_dir / "raw" / "color").exists():
+        print("  Cloning PlantVillage from GitHub…")
+        ret = os.system(f"git clone --depth 1 https://github.com/spMohanty/PlantVillage-Dataset.git {auto_dir} >/dev/null 2>&1")
+        if ret != 0:
+            print("  ⚠  Git clone failed.")
+            return
+
+    src_root = auto_dir / "raw" / "color"
+    if not src_root.exists():
+        print("  ⚠  Could not find raw/color folder in PlantVillage repo.")
+        return
 
     total = 0
     skipped = 0
+    all_files: Dict[int, List[Path]] = {}
+    
+    for cls_folder in sorted(src_root.iterdir()):
+        if not cls_folder.is_dir():
+            continue
+        class_id = normalize_label(cls_folder.name)
+        if class_id is None:
+            skipped += len(list(cls_folder.glob("*")))
+            continue
+        all_files.setdefault(class_id, []).extend(
+            [f for f in cls_folder.glob("*") if f.suffix.lower() in (".jpg", ".jpeg", ".png", ".JPG")]
+        )
 
-    for split_name, split_data in [("train", ds["train"]), ("test", ds["test"])]:
-        dest_split = "train" if split_name == "train" else "val"
-        
-        # Get label int2str function if available
-        label_feat = split_data.features.get("label")
-        
-        for item in tqdm(split_data, desc=f"  PlantVillage {split_name}"):
-            raw_label = item.get("label")
-            img = item.get("image")
-            if raw_label is None or img is None:
-                skipped += 1
-                continue
-                
-            label_str = str(raw_label)
-            if hasattr(label_feat, "int2str"):
-                label_str = label_feat.int2str(raw_label)
-            elif "label_str" in item:
-                label_str = item["label_str"]
-                
-            class_id = normalize_label(label_str)
-            if class_id is None:
-                skipped += 1
-                continue
-            # Save PIL image to temp file and copy
-            tmp = DATA / f"_tmp_{total}.jpg"
-            try:
-                img.save(tmp, "JPEG", quality=95)
-                copy_image(tmp, class_id, dest_split)
-                tmp.unlink(missing_ok=True)
+    for class_id, files in tqdm(all_files.items(), desc="  PlantVillage"):
+        train_files, val_files = split_files(files)
+        for f in train_files:
+            if copy_image(f, class_id, "train"):
                 total += 1
-            except Exception as e:
-                tmp.unlink(missing_ok=True)
+            else:
+                skipped += 1
+        for f in val_files:
+            if copy_image(f, class_id, "val"):
+                total += 1
+            else:
                 skipped += 1
 
     print(f"  ✓ PlantVillage: {total} images copied, {skipped} skipped")
