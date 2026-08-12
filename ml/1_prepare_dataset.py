@@ -296,21 +296,80 @@ def prepare_paddy_doctor(skip: bool = False) -> None:
     print("="*60)
 
     auto_dir = DATA / "paddy_doctor"
-    # Try Kaggle download
+    
+    # Attempt 1: Kaggle
     kaggle_json = Path.home() / ".kaggle" / "kaggle.json"
     if not (auto_dir / "train_images").exists() and not skip and kaggle_json.exists():
         print("  Downloading Paddy Doctor via Kaggle…")
         os.system(f"kaggle competitions download -c paddy-disease-classification -p {auto_dir} --unzip 2>/dev/null || "
                   f"kaggle datasets download -d jaswanth0108/paddy-doctor-extended -p {auto_dir} --unzip 2>/dev/null")
 
+    # Attempt 2: Hugging Face Fallback
     if not auto_dir.exists() or not any(auto_dir.iterdir()):
-        print("  ⚠  Paddy Doctor not available automatically. Manual steps:")
-        print("     1. Go to https://paddydoc.github.io/dataset/")
-        print("     2. Request access and download the dataset")
-        print("     3. Extract to ml/data/paddy_doctor/ with structure:")
-        print("        ml/data/paddy_doctor/train_images/<class_name>/<image>.jpg")
-        print("     4. Re-run this script")
-        return
+        print("  ⚠  Kaggle download failed/skipped. Trying HuggingFace fallback (anthony2261/paddy-disease-classification)…")
+        try:
+            from datasets import load_dataset
+            ds = load_dataset("anthony2261/paddy-disease-classification", split="train")
+            
+            PADDY_MAP = {
+                "bacterial_leaf_blight": 38, "bacterial_leaf_streak": 39, "bacterial_panicle_blight": 40,
+                "blast": 41, "brown_spot": 42, "downy_mildew": 43, "hispa": 44, "tungro": 45,
+                "dead_heart": 46, "normal": 47
+            }
+            
+            label_feat = ds.features.get("label")
+            total = 0
+            skipped = 0
+            
+            # Create train/val split indices
+            num_samples = len(ds)
+            val_size = int(num_samples * 0.15)
+            indices = list(range(num_samples))
+            import random
+            random.seed(42)
+            random.shuffle(indices)
+            val_indices = set(indices[:val_size])
+            
+            for i, item in enumerate(tqdm(ds, desc="  Paddy Doctor (HF)")):
+                raw_label = item.get("label")
+                img = item.get("image")
+                if raw_label is None or img is None:
+                    skipped += 1
+                    continue
+                    
+                label_str = str(raw_label)
+                if hasattr(label_feat, "int2str"):
+                    label_str = label_feat.int2str(raw_label)
+                elif "label_str" in item:
+                    label_str = item["label_str"]
+                    
+                class_id = PADDY_MAP.get(label_str.lower())
+                if class_id is None:
+                    skipped += 1
+                    continue
+                    
+                dest_split = "val" if i in val_indices else "train"
+                tmp = DATA / f"_tmp_paddy_{i}.jpg"
+                try:
+                    img.save(tmp, "JPEG", quality=95)
+                    copy_image(tmp, class_id, dest_split)
+                    tmp.unlink(missing_ok=True)
+                    total += 1
+                except Exception:
+                    tmp.unlink(missing_ok=True)
+                    skipped += 1
+                    
+            print(f"  ✓ Paddy Doctor (HF): {total} images copied, {skipped} skipped")
+            return
+            
+        except Exception as e:
+            print(f"  ⚠  HuggingFace fallback failed: {e}")
+            print("  Manual steps:")
+            print("     1. Go to https://paddydoc.github.io/dataset/")
+            print("     2. Request access and download the dataset")
+            print("     3. Extract to ml/data/paddy_doctor/")
+            print("     4. Re-run this script")
+            return
 
     PADDY_MAP = {
         "bacterial_leaf_blight": 38,
@@ -325,6 +384,7 @@ def prepare_paddy_doctor(skip: bool = False) -> None:
         "black_stem_borer": 46,
         "white_stem_borer": 46,
         "yellow_stem_borer": 46,
+        "dead_heart": 46,
         "normal": 47,
         "healthy": 47,
     }
@@ -353,9 +413,13 @@ def prepare_paddy_doctor(skip: bool = False) -> None:
         for f in train_files:
             if copy_image(f, class_id, "train"):
                 total += 1
+            else:
+                skipped += 1
         for f in val_files:
             if copy_image(f, class_id, "val"):
                 total += 1
+            else:
+                skipped += 1
 
     print(f"  ✓ Paddy Doctor: {total} images copied, {skipped} skipped")
 
