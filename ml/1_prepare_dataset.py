@@ -141,13 +141,24 @@ def prepare_plantvillage() -> None:
 
     for split_name, split_data in [("train", ds["train"]), ("test", ds["test"])]:
         dest_split = "train" if split_name == "train" else "val"
+        
+        # Get label int2str function if available
+        label_feat = split_data.features.get("label")
+        
         for item in tqdm(split_data, desc=f"  PlantVillage {split_name}"):
-            label_str = item.get("label_str") or item.get("label")
+            raw_label = item.get("label")
             img = item.get("image")
-            if label_str is None or img is None:
+            if raw_label is None or img is None:
                 skipped += 1
                 continue
-            class_id = normalize_label(str(label_str))
+                
+            label_str = str(raw_label)
+            if hasattr(label_feat, "int2str"):
+                label_str = label_feat.int2str(raw_label)
+            elif "label_str" in item:
+                label_str = item["label_str"]
+                
+            class_id = normalize_label(label_str)
             if class_id is None:
                 skipped += 1
                 continue
