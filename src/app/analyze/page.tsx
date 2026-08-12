@@ -11,9 +11,11 @@ import {
   CheckCircle2,
   RefreshCw,
   Info,
+  ScanLine,
 } from "lucide-react";
 import { getInferenceService } from "@/lib/inference";
 import { saveToHistory, generateThumbnail } from "@/lib/history";
+import { validateIsPlant } from "@/lib/plant-validator";
 import type { DiseaseResult, AnalysisError } from "@/types/analysis";
 import ResultCard from "@/components/analysis/ResultCard";
 import SeverityPanel from "@/components/analysis/SeverityPanel";
@@ -21,7 +23,13 @@ import HeatmapPanel from "@/components/analysis/HeatmapPanel";
 import RecommendationPanel from "@/components/analysis/RecommendationPanel";
 import DisclaimerBanner from "@/components/analysis/DisclaimerBanner";
 
-type Step = "upload" | "validating" | "analyzing" | "results";
+type Step = "upload" | "validating" | "checking-plant" | "analyzing" | "results";
+
+// Tracks plant validation state separately so we can show a rich error
+interface PlantRejection {
+  reason: string;
+  plantType?: string;
+}
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_SIZE_MB = 10;
@@ -58,11 +66,12 @@ async function computeBlurScore(file: File): Promise<number> {
 
 // ── Analysis progress messages ─────────────────────────────────────────────
 const PROGRESS_STEPS = [
-  { label: "Loading image...",           pct: 15 },
-  { label: "Detecting crop type...",     pct: 35 },
-  { label: "Identifying condition...",   pct: 60 },
-  { label: "Calculating severity...",    pct: 80 },
-  { label: "Generating recommendations...", pct: 95 },
+  { label: "Checking image quality...",   pct: 10 },
+  { label: "Verifying plant content...",  pct: 28 },
+  { label: "Identifying crop type...",    pct: 50 },
+  { label: "Detecting disease condition...", pct: 70 },
+  { label: "Calculating severity...",     pct: 85 },
+  { label: "Generating recommendations...", pct: 97 },
 ];
 
 export default function AnalyzePage() {
@@ -76,6 +85,7 @@ export default function AnalyzePage() {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [validationError, setValidationError] = useState<AnalysisError | null>(null);
+  const [plantRejection, setPlantRejection] = useState<PlantRejection | null>(null);
   const [progressIdx, setProgressIdx] = useState(0);
   const [result, setResult] = useState<DiseaseResult | null>(null);
 
@@ -134,12 +144,14 @@ export default function AnalyzePage() {
   const handleFile = useCallback(
     async (f: File) => {
       setValidationError(null);
+      setPlantRejection(null);
       setStep("validating");
 
       const url = URL.createObjectURL(f);
       setFile(f);
       setImageUrl(url);
 
+      // Step 1: Basic file validation (type, size, blur)
       const err = await validateFile(f);
       if (err) {
         setValidationError(err);
@@ -147,7 +159,24 @@ export default function AnalyzePage() {
         return;
       }
 
-      // Proceed to analysis
+      // Step 2: Gemini plant validation — check if image is actually a plant
+      setStep("checking-plant");
+      try {
+        const plantCheck = await validateIsPlant(f);
+        if (!plantCheck.isPlant) {
+          setPlantRejection({
+            reason: plantCheck.reason ?? "The image does not appear to contain a plant, leaf, or crop.",
+            plantType: plantCheck.plantType ?? undefined,
+          });
+          setStep("upload");
+          return;
+        }
+      } catch (e) {
+        // If Gemini check fails for any reason, log it and proceed
+        console.warn("Plant validation check failed, proceeding anyway:", e);
+      }
+
+      // Step 3: Proceed to disease detection
       setStep("analyzing");
       try {
         const service = getInferenceService();
@@ -163,8 +192,8 @@ export default function AnalyzePage() {
         console.error(e);
         setValidationError({
           type: "inference",
-          message: "Analysis failed",
-          suggestion: "Please try again with a different image.",
+          message: "Disease analysis failed",
+          suggestion: "Please try again with a clearer image.",
         });
         setStep("upload");
       }
@@ -194,6 +223,7 @@ export default function AnalyzePage() {
     setFile(null);
     setResult(null);
     setValidationError(null);
+    setPlantRejection(null);
     setProgressIdx(0);
     if (imageUrl) { URL.revokeObjectURL(imageUrl); setImageUrl(null); }
   };
@@ -212,14 +242,55 @@ export default function AnalyzePage() {
             <span className="gradient-text">Crop Health</span> Analyzer
           </h1>
           <p style={{ color: "var(--text-secondary)", fontSize: "1rem" }}>
-            Upload or capture a leaf image to detect diseases with AI
+            Upload any plant or leaf image — our AI validates it&apos;s a plant, then detects diseases
           </p>
         </div>
 
-        {/* ── STEP: UPLOAD ─────────────────────────────────────────── */}
+        {/* ── STEP: UPLOAD ─────────────────────────────────────── */}
         {step === "upload" && (
           <div style={{ animation: "fade-in-up 0.4s ease both" }}>
-            {/* Validation error */}
+
+            {/* ── Plant Rejection Error (prominent card) ─────────────── */}
+            {plantRejection && (
+              <div
+                style={{
+                  padding: "28px",
+                  background: "rgba(239,68,68,0.06)",
+                  border: "1px solid rgba(239,68,68,0.3)",
+                  borderRadius: "16px",
+                  marginBottom: "24px",
+                  animation: "fade-in-up 0.4s ease both",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
+                  <div style={{ width: "48px", height: "48px", borderRadius: "12px", background: "rgba(239,68,68,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <Leaf size={24} color="#ef4444" />
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: "1.05rem", fontWeight: 700, color: "#ef4444", marginBottom: "2px" }}>
+                      No plant detected in this image
+                    </h3>
+                    <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+                      {plantRejection.reason}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setPlantRejection(null)}
+                    style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", flexShrink: 0 }}
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+                <div style={{ background: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: "10px", padding: "12px 16px", marginTop: "8px" }}>
+                  <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>
+                    🌿 <strong style={{ color: "#10b981" }}>What to upload:</strong> A clear, well-lit photo of a plant leaf, crop foliage, stem, or any visible plant part.
+                    AgriShield is designed exclusively for plant disease analysis.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* ── Standard Validation Error ──────────────────────────── */}
             {validationError && (
               <div
                 style={{
@@ -251,7 +322,7 @@ export default function AnalyzePage() {
               </div>
             )}
 
-            {/* Drop Zone */}
+            {/* ── Drop Zone ─────────────────────────────────────────── */}
             <div
               ref={dropZoneRef}
               id="drop-zone"
@@ -286,17 +357,19 @@ export default function AnalyzePage() {
                   transition: "all 250ms ease",
                 }}
               >
-                <Upload size={28} color="#10b981" />
+                {dragActive ? <Leaf size={28} color="#10b981" /> : <Upload size={28} color="#10b981" />}
               </div>
 
               <h3
                 className="font-display"
                 style={{ fontSize: "1.2rem", fontWeight: 700, marginBottom: "8px", color: "var(--text-primary)" }}
               >
-                {dragActive ? "Drop your image here" : "Upload a leaf image"}
+                {dragActive ? "Drop your plant image here" : "Upload a plant or leaf image"}
               </h3>
-              <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", marginBottom: "24px", maxWidth: "360px" }}>
+              <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", marginBottom: "24px", maxWidth: "380px" }}>
                 Drag and drop or click to browse. Supports JPEG, PNG, WebP up to 10 MB.
+                <br />
+                <span style={{ color: "var(--text-muted)", fontSize: "0.82rem" }}>Our AI verifies the image is a plant before analysis.</span>
               </p>
 
               <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "center" }}>
@@ -354,16 +427,17 @@ export default function AnalyzePage() {
             >
               <Info size={16} color="#3b82f6" style={{ flexShrink: 0, marginTop: "2px" }} />
               <p style={{ fontSize: "0.83rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>
-                <strong style={{ color: "#3b82f6" }}>Supported crops:</strong> Rice/Paddy · Tomato · Potato.
-                Upload a clear, well-lit photo of a single leaf for best results.
-                Images with blurry or dark backgrounds may be rejected.
+                <strong style={{ color: "#3b82f6" }}>How it works:</strong> Upload any clear photo of a plant leaf or crop.
+                Our AI first validates the image is a plant, then analyses it for disease, severity, and recommends treatment.
+                Images must be well-lit and in focus for accurate results.
               </p>
             </div>
           </div>
         )}
 
+
         {/* ── STEP: VALIDATING ─────────────────────────────────────── */}
-        {step === "validating" && (
+        {(step === "validating" || step === "checking-plant") && (
           <div
             style={{
               display: "flex",
@@ -375,23 +449,38 @@ export default function AnalyzePage() {
               textAlign: "center",
             }}
           >
+            {imageUrl && (
+              <div style={{ width: "80px", height: "80px", borderRadius: "16px", overflow: "hidden", marginBottom: "24px", border: "2px solid rgba(16,185,129,0.3)", position: "relative" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={imageUrl} alt="Uploaded" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, transparent 60%, rgba(0,0,0,0.4))" }} />
+              </div>
+            )}
             <div
               style={{
-                width: "64px",
-                height: "64px",
+                width: "48px",
+                height: "48px",
                 border: "3px solid rgba(16,185,129,0.2)",
                 borderTopColor: "#10b981",
                 borderRadius: "50%",
                 animation: "spin-slow 0.8s linear infinite",
-                marginBottom: "20px",
+                marginBottom: "16px",
               }}
             />
             <h3 className="font-display" style={{ fontSize: "1.2rem", fontWeight: 700, marginBottom: "8px" }}>
-              Validating image...
+              {step === "checking-plant" ? "Verifying plant content..." : "Checking image quality..."}
             </h3>
             <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
-              Checking quality and format
+              {step === "checking-plant"
+                ? "AI is confirming this is a plant or leaf image"
+                : "Checking file format and image sharpness"}
             </p>
+            {step === "checking-plant" && (
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "16px", color: "var(--text-muted)", fontSize: "0.8rem" }}>
+                <ScanLine size={14} color="#10b981" />
+                <span>Powered by Gemini Vision</span>
+              </div>
+            )}
           </div>
         )}
 
