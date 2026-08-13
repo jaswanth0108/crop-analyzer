@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ShieldAlert, Stethoscope, ShieldCheck, AlertCircle } from "lucide-react";
 import type { Recommendation } from "@/types/analysis";
+import { useTranslation } from "@/lib/i18n/useTranslation";
 
 interface Props {
   recommendations: Recommendation[];
@@ -20,17 +21,18 @@ const CATEGORY_COLORS = {
   prevention: "#10b981",
 };
 
-const CATEGORY_LABELS = {
-  immediate: "Immediate Action",
-  treatment: "Treatment",
-  prevention: "Prevention",
-};
-
 export default function RecommendationPanel({ recommendations }: Props) {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<"immediate" | "treatment" | "prevention">("immediate");
 
+  const CATEGORY_LABELS = {
+    immediate: t("recommendation.immediate"),
+    treatment: t("recommendation.treatment"),
+    prevention: t("recommendation.prevention"),
+  };
+
   const categories = ["immediate", "treatment", "prevention"] as const;
-  
+
   // Default to the first available category if immediate is empty
   useState(() => {
     if (!recommendations.some(r => r.category === "immediate")) {
@@ -46,7 +48,7 @@ export default function RecommendationPanel({ recommendations }: Props) {
       <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "20px" }}>
         <ShieldCheck size={20} color="var(--accent-primary)" />
         <h3 style={{ fontSize: "1.2rem", fontWeight: 700, color: "var(--text-primary)" }}>
-          Recommendations
+          {t("recommendation.title")}
         </h3>
       </div>
 
@@ -55,11 +57,11 @@ export default function RecommendationPanel({ recommendations }: Props) {
         {categories.map((cat) => {
           const count = recommendations.filter(r => r.category === cat).length;
           if (count === 0) return null;
-          
+
           const isActive = activeTab === cat;
           const Icon = CATEGORY_ICONS[cat];
           const color = CATEGORY_COLORS[cat];
-          
+
           return (
             <button
               key={cat}
@@ -69,8 +71,8 @@ export default function RecommendationPanel({ recommendations }: Props) {
             >
               <Icon size={16} color={isActive ? color : "currentColor"} />
               {CATEGORY_LABELS[cat]}
-              <span style={{ 
-                background: isActive ? `${color}20` : "var(--bg-hover)", 
+              <span style={{
+                background: isActive ? `${color}20` : "var(--bg-hover)",
                 color: isActive ? color : "var(--text-muted)",
                 padding: "2px 6px",
                 borderRadius: "10px",
@@ -88,7 +90,7 @@ export default function RecommendationPanel({ recommendations }: Props) {
       <div style={{ display: "flex", flexDirection: "column", gap: "16px", minHeight: "200px" }}>
         {activeRecs.length === 0 ? (
           <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", textAlign: "center", marginTop: "32px" }}>
-            No recommendations in this category.
+            {t("recommendation.none")}
           </p>
         ) : (
           activeRecs.map((rec, idx) => (
@@ -121,7 +123,7 @@ export default function RecommendationPanel({ recommendations }: Props) {
                   </h4>
                   {rec.urgency === "high" && (
                     <span style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", color: "#ef4444", fontWeight: 600, background: "rgba(239,68,68,0.1)", padding: "2px 8px", borderRadius: "10px" }}>
-                      <AlertCircle size={12} /> High Priority
+                      <AlertCircle size={12} /> {t("recommendation.highPriority")}
                     </span>
                   )}
                 </div>

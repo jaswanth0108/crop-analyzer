@@ -4,19 +4,23 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Leaf, Menu, X, BarChart2, Database, BookOpen, Upload } from "lucide-react";
-
-const NAV_LINKS = [
-  { href: "/",                label: "Home",           icon: null },
-  { href: "/analyze",         label: "Analyze",        icon: Upload },
-  { href: "/history",         label: "Scan History",   icon: BarChart2 },
-  { href: "/supported-crops", label: "Supported Crops", icon: BookOpen },
-  { href: "/datasets",        label: "Datasets",       icon: Database },
-];
+import { useTranslation } from "@/lib/i18n/useTranslation";
+import LanguageSelector from "@/components/LanguageSelector";
 
 export default function Navbar() {
   const pathname = usePathname();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { t } = useTranslation();
+
+  // Rebuild nav links reactively so they re-render when language changes
+  const NAV_LINKS = [
+    { href: "/",                label: t("nav.home"),          icon: null },
+    { href: "/analyze",         label: t("nav.analyze"),       icon: Upload },
+    { href: "/history",         label: t("nav.history"),       icon: BarChart2 },
+    { href: "/supported-crops", label: t("nav.supportedCrops"), icon: BookOpen },
+    { href: "/datasets",        label: t("nav.datasets"),      icon: Database },
+  ];
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 20);
@@ -150,15 +154,20 @@ export default function Navbar() {
             })}
           </div>
 
-          {/* CTA + Mobile Toggle */}
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          {/* CTA + Language Selector + Mobile Toggle */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            {/* Language selector (desktop) */}
+            <div className="hide-mobile">
+              <LanguageSelector />
+            </div>
+
             <Link
               href="/analyze"
               className="btn-primary hide-mobile"
               style={{ padding: "8px 20px", fontSize: "0.875rem" }}
             >
               <Upload size={15} />
-              Analyze Crop
+              {t("nav.analyzeCrop")}
             </Link>
 
             <button
@@ -223,14 +232,20 @@ export default function Navbar() {
                 </Link>
               );
             })}
-            <div style={{ marginTop: "12px" }}>
+
+            {/* Language selector (mobile) */}
+            <div style={{ marginTop: "8px" }}>
+              <LanguageSelector mobile />
+            </div>
+
+            <div style={{ marginTop: "8px" }}>
               <Link
                 href="/analyze"
                 className="btn-primary"
                 style={{ width: "100%", justifyContent: "center" }}
               >
                 <Upload size={16} />
-                Analyze a Crop
+                {t("nav.analyzeACrop")}
               </Link>
             </div>
           </div>

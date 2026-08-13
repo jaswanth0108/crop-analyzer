@@ -4,28 +4,41 @@ import { useEffect, useState } from "react";
 import { Activity } from "lucide-react";
 import type { DiseaseResult } from "@/types/analysis";
 import { SEVERITY_CONFIG } from "@/lib/severity";
+import { useTranslation } from "@/lib/i18n/useTranslation";
 
 interface Props {
   result: DiseaseResult;
 }
 
 export default function SeverityPanel({ result }: Props) {
+  const { t } = useTranslation();
   const config = SEVERITY_CONFIG[result.severityLabel];
   const [fillPct, setFillPct] = useState(0);
 
   useEffect(() => {
-    // If unavailable, no bar
     if (result.severityLabel === "unavailable" || result.severityPercentage === null) {
       setFillPct(0);
       return;
     }
-    // slight animation delay
-    const t = setTimeout(() => {
-      // Clamp between 2% (so it's visible if very low) and 100%
+    const timer = setTimeout(() => {
       setFillPct(Math.max(2, Math.min(100, result.severityPercentage!)));
     }, 100);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [result.severityLabel, result.severityPercentage]);
+
+  // Translated severity label for the badge
+  const severityLabelKey = `severity.labels.${result.severityLabel}` as const;
+  const translatedLabel = t(severityLabelKey);
+
+  // Translated scale labels
+  const scaleLabels = [
+    t("severity.scaleLabels.healthy"),
+    t("severity.scaleLabels.mild"),
+    t("severity.scaleLabels.mod"),
+    t("severity.scaleLabels.high"),
+    t("severity.scaleLabels.vhigh"),
+    t("severity.scaleLabels.crit"),
+  ];
 
   return (
     <div className="card" style={{ padding: "24px" }}>
@@ -33,10 +46,10 @@ export default function SeverityPanel({ result }: Props) {
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <Activity size={18} color="var(--text-secondary)" />
           <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "var(--text-primary)" }}>
-            Severity Estimation
+            {t("severity.title")}
           </h3>
         </div>
-        
+
         {result.severityLabel !== "unavailable" && (
           <div
             style={{
@@ -50,14 +63,14 @@ export default function SeverityPanel({ result }: Props) {
               letterSpacing: "0.05em",
             }}
           >
-            {config.label}
+            {translatedLabel}
           </div>
         )}
       </div>
 
       {result.severityLabel === "unavailable" ? (
         <p style={{ fontSize: "0.9rem", color: "var(--text-secondary)", fontStyle: "italic", margin: 0 }}>
-          Severity estimation is currently unavailable for this condition.
+          {t("severity.unavailable")}
         </p>
       ) : (
         <div>
@@ -87,7 +100,7 @@ export default function SeverityPanel({ result }: Props) {
                 }}
               />
             ))}
-            
+
             {/* Fill */}
             <div
               className="severity-bar-fill"
@@ -102,15 +115,22 @@ export default function SeverityPanel({ result }: Props) {
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div style={{ display: "flex", gap: "2px" }}>
-              {["Healthy", "Mild", "Mod", "High", "V.High", "Crit"].map((lbl, i) => (
-                <div key={lbl} style={{ fontSize: "0.6rem", color: "var(--text-muted)", width: i === 0 ? "10%" : i === 5 ? "35%" : i===1 ? "15%" : "20%" }}>
+              {scaleLabels.map((lbl, i) => (
+                <div
+                  key={i}
+                  style={{
+                    fontSize: "0.6rem",
+                    color: "var(--text-muted)",
+                    width: i === 0 ? "10%" : i === 5 ? "35%" : i === 1 ? "15%" : "20%",
+                  }}
+                >
                   {lbl}
                 </div>
               ))}
             </div>
             {result.severityPercentage !== null && (
               <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-secondary)" }}>
-                {result.severityPercentage.toFixed(1)}% lesion area
+                {result.severityPercentage.toFixed(1)}% {t("severity.lesionArea")}
               </span>
             )}
           </div>

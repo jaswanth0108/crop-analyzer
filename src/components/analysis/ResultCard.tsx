@@ -4,44 +4,46 @@ import { useEffect, useState } from "react";
 import { CheckCircle2, AlertTriangle, XCircle, HelpCircle } from "lucide-react";
 import type { DiseaseResult, ConfidenceLevel } from "@/types/analysis";
 import { getSpeciesEmoji } from "@/lib/supported-conditions";
+import { useTranslation } from "@/lib/i18n/useTranslation";
 
 interface Props {
   result: DiseaseResult;
   imageUrl?: string;
 }
 
-const CONFIDENCE_CONFIG: Record<
-  ConfidenceLevel,
-  { icon: React.ElementType; color: string; label: string }
-> = {
-  high: { icon: CheckCircle2, color: "#10b981", label: "High Confidence" },
-  medium: { icon: CheckCircle2, color: "#3b82f6", label: "Medium Confidence" },
-  low: { icon: AlertTriangle, color: "#f59e0b", label: "Low Confidence" },
-  unreliable: { icon: XCircle, color: "#ef4444", label: "Unreliable" },
-  unsupported: { icon: HelpCircle, color: "#9ca3af", label: "Unsupported Image" },
-};
-
 export default function ResultCard({ result, imageUrl }: Props) {
-  const conf = CONFIDENCE_CONFIG[result.confidenceLevel];
-  const ConfIcon = conf.icon;
+  const { t } = useTranslation();
   const pct = Math.round(result.confidence * 100);
 
+  const CONFIDENCE_CONFIG: Record<
+    ConfidenceLevel,
+    { icon: React.ElementType; color: string; label: string }
+  > = {
+    high:        { icon: CheckCircle2, color: "#10b981", label: t("result.confidence.high") },
+    medium:      { icon: CheckCircle2, color: "#3b82f6", label: t("result.confidence.medium") },
+    low:         { icon: AlertTriangle, color: "#f59e0b", label: t("result.confidence.low") },
+    unreliable:  { icon: XCircle,      color: "#ef4444", label: t("result.confidence.unreliable") },
+    unsupported: { icon: HelpCircle,   color: "#9ca3af", label: t("result.confidence.unsupported") },
+  };
+
+  const conf = CONFIDENCE_CONFIG[result.confidenceLevel];
+  const ConfIcon = conf.icon;
+
   // Animation for the ring
-  const [dashOffset, setDashOffset] = useState(283); // 2 * PI * 45
+  const [dashOffset, setDashOffset] = useState(283);
   useEffect(() => {
-    // slight delay for animation
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       setDashOffset(283 - (283 * pct) / 100);
     }, 100);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [pct]);
 
   const cropEmoji = result.crop ? getSpeciesEmoji(result.crop) : "🌱";
-  const cropColor = "#10b981"; // We use a unified emerald color for all dynamic crops now
+  const cropColor = "#10b981";
 
   return (
     <div className="card" style={{ padding: "32px", display: "flex", gap: "32px", alignItems: "flex-start", flexWrap: "wrap" }}>
-      
+
       {/* Thumbnail */}
       {imageUrl && (
         <div
@@ -67,7 +69,7 @@ export default function ResultCard({ result, imageUrl }: Props) {
       <div style={{ flex: 1, minWidth: "200px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
           <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-            Detected Condition
+            {t("result.detectedCondition")}
           </span>
           {result.crop && (
             <span
@@ -138,7 +140,7 @@ export default function ResultCard({ result, imageUrl }: Props) {
             {pct}%
           </span>
           <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", marginTop: "2px" }}>
-            Match
+            {t("result.match")}
           </span>
         </div>
       </div>

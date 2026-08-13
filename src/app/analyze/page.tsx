@@ -22,10 +22,10 @@ import SeverityPanel from "@/components/analysis/SeverityPanel";
 import HeatmapPanel from "@/components/analysis/HeatmapPanel";
 import RecommendationPanel from "@/components/analysis/RecommendationPanel";
 import DisclaimerBanner from "@/components/analysis/DisclaimerBanner";
+import { useTranslation } from "@/lib/i18n/useTranslation";
 
 type Step = "upload" | "validating" | "checking-plant" | "analyzing" | "results";
 
-// Tracks plant validation state separately so we can show a rich error
 interface PlantRejection {
   reason: string;
   plantType?: string;
@@ -49,7 +49,6 @@ async function computeBlurScore(file: File): Promise<number> {
       const data = ctx.getImageData(0, 0, SIZE, SIZE).data;
       URL.revokeObjectURL(url);
 
-      // Convert to grayscale and compute variance (Laplacian proxy)
       const pixels: number[] = [];
       for (let i = 0; i < data.length; i += 4) {
         pixels.push(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
@@ -59,26 +58,17 @@ async function computeBlurScore(file: File): Promise<number> {
         pixels.reduce((a, b) => a + (b - mean) ** 2, 0) / pixels.length;
       resolve(variance);
     };
-    img.onerror = () => resolve(999); // can't check — allow it
+    img.onerror = () => resolve(999);
     img.src = url;
   });
 }
-
-// ── Analysis progress messages ─────────────────────────────────────────────
-const PROGRESS_STEPS = [
-  { label: "Checking image quality...",   pct: 10 },
-  { label: "Verifying plant content...",  pct: 28 },
-  { label: "Identifying crop type...",    pct: 50 },
-  { label: "Detecting disease condition...", pct: 70 },
-  { label: "Calculating severity...",     pct: 85 },
-  { label: "Generating recommendations...", pct: 97 },
-];
 
 export default function AnalyzePage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
+  const { t } = useTranslation();
 
   const [step, setStep] = useState<Step>("upload");
   const [file, setFile] = useState<File | null>(null);
@@ -88,6 +78,16 @@ export default function AnalyzePage() {
   const [plantRejection, setPlantRejection] = useState<PlantRejection | null>(null);
   const [progressIdx, setProgressIdx] = useState(0);
   const [result, setResult] = useState<DiseaseResult | null>(null);
+
+  // Derive progress steps from translations
+  const PROGRESS_STEPS = [
+    { label: t("analyze.progress1"), pct: 10 },
+    { label: t("analyze.progress2"), pct: 28 },
+    { label: t("analyze.progress3"), pct: 50 },
+    { label: t("analyze.progress4"), pct: 70 },
+    { label: t("analyze.progress5"), pct: 85 },
+    { label: t("analyze.progress6"), pct: 97 },
+  ];
 
   // Cleanup object URLs on unmount
   useEffect(() => {
@@ -110,6 +110,7 @@ export default function AnalyzePage() {
       }
     };
     setTimeout(advance, timings[0]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
 
   // ── File validation ──────────────────────────────────────────────────────
@@ -117,28 +118,28 @@ export default function AnalyzePage() {
     if (!ACCEPTED_TYPES.includes(f.type)) {
       return {
         type: "validation",
-        message: "Unsupported file type",
-        suggestion: "Please upload a JPEG, PNG, or WebP image.",
+        message: t("analyze.errorUnsupportedType"),
+        suggestion: t("analyze.errorUnsupportedTypeSuggest"),
       };
     }
     if (f.size > MAX_SIZE_MB * 1024 * 1024) {
       return {
         type: "validation",
-        message: `File too large (${(f.size / 1024 / 1024).toFixed(1)} MB)`,
-        suggestion: `Please upload an image smaller than ${MAX_SIZE_MB} MB.`,
+        message: t("analyze.errorFileTooLarge"),
+        suggestion: t("analyze.errorFileTooLargeSuggest"),
       };
     }
     const blurScore = await computeBlurScore(f);
     if (blurScore < 80) {
       return {
         type: "validation",
-        message: "Image appears too blurry",
-        suggestion:
-          "Please take a clearer photo. Ensure the leaf is in focus and well-lit.",
+        message: t("analyze.errorBlurry"),
+        suggestion: t("analyze.errorBlurrySuggest"),
       };
     }
     return null;
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [t]);
 
   // ── Handle file selection ───────────────────────────────────────────────
   const handleFile = useCallback(
@@ -151,7 +152,6 @@ export default function AnalyzePage() {
       setFile(f);
       setImageUrl(url);
 
-      // Step 1: Basic file validation (type, size, blur)
       const err = await validateFile(f);
       if (err) {
         setValidationError(err);
@@ -159,31 +159,27 @@ export default function AnalyzePage() {
         return;
       }
 
-      // Step 2: Gemini plant validation — check if image is actually a plant
       setStep("checking-plant");
       try {
         const plantCheck = await validateIsPlant(f);
         if (!plantCheck.isPlant) {
           setPlantRejection({
-            reason: plantCheck.reason ?? "The image does not appear to contain a plant, leaf, or crop.",
+            reason: plantCheck.reason ?? t("analyze.noPlantTitle"),
             plantType: plantCheck.plantType ?? undefined,
           });
           setStep("upload");
           return;
         }
       } catch (e) {
-        // If Gemini check fails for any reason, log it and proceed
         console.warn("Plant validation check failed, proceeding anyway:", e);
       }
 
-      // Step 3: Proceed to disease detection
       setStep("analyzing");
       try {
         const service = getInferenceService();
         const analysisResult = await service.analyze(f, url);
         setResult(analysisResult);
 
-        // Save to history
         const thumbnail = await generateThumbnail(f).catch(() => "");
         saveToHistory({ id: crypto.randomUUID(), result: analysisResult, thumbnailUrl: thumbnail });
 
@@ -192,13 +188,13 @@ export default function AnalyzePage() {
         console.error(e);
         setValidationError({
           type: "inference",
-          message: "Disease analysis failed",
-          suggestion: "Please try again with a clearer image.",
+          message: t("analyze.errorFailed"),
+          suggestion: t("analyze.errorFailedSuggest"),
         });
         setStep("upload");
       }
     },
-    [validateFile]
+    [validateFile, t]
   );
 
   // ── Drag and Drop ───────────────────────────────────────────────────────
@@ -239,10 +235,10 @@ export default function AnalyzePage() {
             className="font-display"
             style={{ fontSize: "clamp(1.8rem, 3vw, 2.5rem)", fontWeight: 900, marginBottom: "12px" }}
           >
-            <span className="gradient-text">Crop Health</span> Analyzer
+            <span className="gradient-text">{t("analyze.title1")}</span> {t("analyze.titleHighlight")}
           </h1>
           <p style={{ color: "var(--text-secondary)", fontSize: "1rem" }}>
-            Upload any plant or leaf image — our AI validates it&apos;s a plant, then detects diseases
+            {t("analyze.subtitle")}
           </p>
         </div>
 
@@ -250,7 +246,7 @@ export default function AnalyzePage() {
         {step === "upload" && (
           <div style={{ animation: "fade-in-up 0.4s ease both" }}>
 
-            {/* ── Plant Rejection Error (prominent card) ─────────────── */}
+            {/* ── Plant Rejection Error ─────────────────────────────── */}
             {plantRejection && (
               <div
                 style={{
@@ -268,7 +264,7 @@ export default function AnalyzePage() {
                   </div>
                   <div>
                     <h3 style={{ fontSize: "1.05rem", fontWeight: 700, color: "#ef4444", marginBottom: "2px" }}>
-                      No plant detected in this image
+                      {t("analyze.noPlantTitle")}
                     </h3>
                     <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
                       {plantRejection.reason}
@@ -283,8 +279,7 @@ export default function AnalyzePage() {
                 </div>
                 <div style={{ background: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: "10px", padding: "12px 16px", marginTop: "8px" }}>
                   <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>
-                    🌿 <strong style={{ color: "#10b981" }}>What to upload:</strong> A clear, well-lit photo of a plant leaf, crop foliage, stem, or any visible plant part.
-                    AgriShield is designed exclusively for plant disease analysis.
+                    {t("analyze.noPlantHint")}
                   </p>
                 </div>
               </div>
@@ -364,12 +359,12 @@ export default function AnalyzePage() {
                 className="font-display"
                 style={{ fontSize: "1.2rem", fontWeight: 700, marginBottom: "8px", color: "var(--text-primary)" }}
               >
-                {dragActive ? "Drop your plant image here" : "Upload a plant or leaf image"}
+                {dragActive ? t("analyze.dropTitleDrag") : t("analyze.dropTitle")}
               </h3>
               <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", marginBottom: "24px", maxWidth: "380px" }}>
-                Drag and drop or click to browse. Supports JPEG, PNG, WebP up to 10 MB.
+                {t("analyze.dropSubtitle")}
                 <br />
-                <span style={{ color: "var(--text-muted)", fontSize: "0.82rem" }}>Our AI verifies the image is a plant before analysis.</span>
+                <span style={{ color: "var(--text-muted)", fontSize: "0.82rem" }}>{t("analyze.dropSubtitleNote")}</span>
               </p>
 
               <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "center" }}>
@@ -380,7 +375,7 @@ export default function AnalyzePage() {
                   style={{ padding: "10px 24px" }}
                 >
                   <Upload size={16} />
-                  Browse Files
+                  {t("analyze.browseFiles")}
                 </button>
                 <button
                   id="camera-capture-btn"
@@ -389,7 +384,7 @@ export default function AnalyzePage() {
                   style={{ padding: "9px 22px" }}
                 >
                   <Camera size={16} />
-                  Take Photo
+                  {t("analyze.takePhoto")}
                 </button>
               </div>
 
@@ -427,9 +422,8 @@ export default function AnalyzePage() {
             >
               <Info size={16} color="#3b82f6" style={{ flexShrink: 0, marginTop: "2px" }} />
               <p style={{ fontSize: "0.83rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>
-                <strong style={{ color: "#3b82f6" }}>How it works:</strong> Upload any clear photo of a plant leaf or crop.
-                Our AI first validates the image is a plant, then analyses it for disease, severity, and recommends treatment.
-                Images must be well-lit and in focus for accurate results.
+                <strong style={{ color: "#3b82f6" }}>{t("analyze.howTitle")}</strong>{" "}
+                {t("analyze.howText")}
               </p>
             </div>
           </div>
@@ -468,17 +462,17 @@ export default function AnalyzePage() {
               }}
             />
             <h3 className="font-display" style={{ fontSize: "1.2rem", fontWeight: 700, marginBottom: "8px" }}>
-              {step === "checking-plant" ? "Verifying plant content..." : "Checking image quality..."}
+              {step === "checking-plant" ? t("analyze.checkingPlant") : t("analyze.checkingQuality")}
             </h3>
             <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
               {step === "checking-plant"
-                ? "AI is confirming this is a plant or leaf image"
-                : "Checking file format and image sharpness"}
+                ? t("analyze.checkingPlantNote")
+                : t("analyze.checkingQualityNote")}
             </p>
             {step === "checking-plant" && (
               <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "16px", color: "var(--text-muted)", fontSize: "0.8rem" }}>
                 <ScanLine size={14} color="#10b981" />
-                <span>Powered by Gemini Vision</span>
+                <span>{t("analyze.poweredBy")}</span>
               </div>
             )}
           </div>
@@ -491,7 +485,6 @@ export default function AnalyzePage() {
               className="card"
               style={{ padding: "40px 32px", textAlign: "center" }}
             >
-              {/* Thumbnail */}
               {imageUrl && (
                 <div
                   style={{
@@ -524,7 +517,7 @@ export default function AnalyzePage() {
                 className="font-display"
                 style={{ fontSize: "1.2rem", fontWeight: 700, marginBottom: "8px" }}
               >
-                Analyzing your image
+                {t("analyze.analyzingTitle")}
               </h3>
               <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", marginBottom: "32px" }}>
                 {PROGRESS_STEPS[progressIdx].label}
@@ -552,7 +545,7 @@ export default function AnalyzePage() {
                 />
               </div>
               <p style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                {PROGRESS_STEPS[progressIdx].pct}% complete
+                {PROGRESS_STEPS[progressIdx].pct}{t("analyze.progressComplete")}
               </p>
 
               {/* Skeleton shimmer cards */}
@@ -577,8 +570,7 @@ export default function AnalyzePage() {
               <div className="demo-banner" style={{ marginBottom: "20px" }}>
                 <AlertTriangle size={16} />
                 <span>
-                  <strong>Demo Results</strong> — These are mock results for demonstration only.
-                  No real model inference was performed.
+                  <strong>{t("analyze.demoBanner")}</strong>
                 </span>
               </div>
             )}
@@ -617,7 +609,7 @@ export default function AnalyzePage() {
                 style={{ padding: "12px 28px" }}
               >
                 <RefreshCw size={16} />
-                Analyze Another
+                {t("analyze.analyzeAnother")}
               </button>
               <button
                 id="view-history-btn"
@@ -625,7 +617,7 @@ export default function AnalyzePage() {
                 className="btn-secondary"
                 style={{ padding: "11px 24px" }}
               >
-                View History
+                {t("analyze.viewHistory")}
               </button>
             </div>
 
@@ -645,8 +637,7 @@ export default function AnalyzePage() {
               >
                 <AlertTriangle size={18} color="#ef4444" style={{ flexShrink: 0, marginTop: "2px" }} />
                 <p style={{ color: "var(--text-secondary)", fontSize: "0.875rem", lineHeight: 1.6 }}>
-                  We could not identify this condition reliably. Please upload a clearer image
-                  or consult an agricultural expert.
+                  {t("analyze.lowConfidence")}
                 </p>
               </div>
             )}

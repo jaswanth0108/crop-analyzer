@@ -11,18 +11,18 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import type { HistoryEntry } from "@/types/analysis";
+import { useTranslation } from "@/lib/i18n/useTranslation";
 
 interface Props {
   history: HistoryEntry[];
 }
 
 export default function TrendChart({ history }: Props) {
+  const { t } = useTranslation();
   const [filterCrop, setFilterCrop] = useState<string>("all");
 
   const data = useMemo(() => {
-    // Sort oldest to newest for the chart (left to right)
     const reversed = [...history].reverse();
-    
     return reversed
       .filter((entry) => filterCrop === "all" || entry.result.crop === filterCrop)
       .map((entry, i) => {
@@ -42,7 +42,7 @@ export default function TrendChart({ history }: Props) {
     return (
       <div className="card" style={{ padding: "32px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "300px" }}>
         <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
-          Not enough data yet. Complete at least 2 scans to see trend analysis.
+          {t("history.trend.notEnough")}
         </p>
       </div>
     );
@@ -53,13 +53,13 @@ export default function TrendChart({ history }: Props) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
         <div>
           <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text-primary)" }}>
-            Confidence Trends
+            {t("history.trend.title")}
           </h3>
           <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginTop: "4px" }}>
-            Model confidence across recent scans
+            {t("history.trend.subtitle")}
           </p>
         </div>
-        
+
         <select
           value={filterCrop}
           onChange={(e) => setFilterCrop(e.target.value)}
@@ -74,10 +74,10 @@ export default function TrendChart({ history }: Props) {
             cursor: "pointer",
           }}
         >
-          <option value="all">All Crops</option>
-          <option value="rice">Rice / Paddy</option>
-          <option value="tomato">Tomato</option>
-          <option value="potato">Potato</option>
+          <option value="all">{t("history.trend.allCrops")}</option>
+          <option value="rice">🌾 {t("crops.rice")}</option>
+          <option value="tomato">🍅 {t("crops.tomato")}</option>
+          <option value="potato">🥔 {t("crops.potato")}</option>
         </select>
       </div>
 

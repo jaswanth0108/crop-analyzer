@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Eye, AlertTriangle } from "lucide-react";
+import { useTranslation } from "@/lib/i18n/useTranslation";
 
 interface Props {
   imageUrl?: string;
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export default function HeatmapPanel({ imageUrl, isDemoData }: Props) {
+  const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
@@ -26,7 +28,6 @@ export default function HeatmapPanel({ imageUrl, isDemoData }: Props) {
       const container = containerRef.current;
       if (!canvas || !container) return;
 
-      // Fit to container width while maintaining aspect ratio
       const width = container.clientWidth;
       const scale = width / img.width;
       const height = img.height * scale;
@@ -37,33 +38,28 @@ export default function HeatmapPanel({ imageUrl, isDemoData }: Props) {
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
-      // Draw original image
       ctx.drawImage(img, 0, 0, width, height);
 
-      // In mock mode, generate random blobs for the heatmap
       if (isDemoData) {
         ctx.globalCompositeOperation = "multiply";
-        
-        // Draw some random red/yellow/green blobs
         for (let i = 0; i < 5; i++) {
           const cx = Math.random() * width;
           const cy = Math.random() * height;
           const r = (Math.random() * 0.2 + 0.1) * Math.min(width, height);
-          
+
           const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-          grad.addColorStop(0, "rgba(239, 68, 68, 0.8)"); // Red center
-          grad.addColorStop(0.5, "rgba(245, 158, 11, 0.5)"); // Yellow middle
-          grad.addColorStop(1, "rgba(16, 185, 129, 0)"); // Transparent green edge
+          grad.addColorStop(0, "rgba(239, 68, 68, 0.8)");
+          grad.addColorStop(0.5, "rgba(245, 158, 11, 0.5)");
+          grad.addColorStop(1, "rgba(16, 185, 129, 0)");
 
           ctx.fillStyle = grad;
           ctx.beginPath();
           ctx.arc(cx, cy, r, 0, Math.PI * 2);
           ctx.fill();
         }
-        
-        ctx.globalCompositeOperation = "source-over"; // Reset
+        ctx.globalCompositeOperation = "source-over";
       }
-      
+
       setLoading(false);
     };
   }, [imageUrl, isDemoData]);
@@ -76,7 +72,7 @@ export default function HeatmapPanel({ imageUrl, isDemoData }: Props) {
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <Eye size={18} color="var(--text-secondary)" />
           <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "var(--text-primary)" }}>
-            Grad-CAM Analysis
+            {t("heatmap.title")}
           </h3>
         </div>
       </div>
@@ -88,19 +84,17 @@ export default function HeatmapPanel({ imageUrl, isDemoData }: Props) {
           </div>
         )}
         <canvas ref={canvasRef} style={{ width: "100%", height: "auto", display: "block", opacity: loading ? 0 : 1, transition: "opacity 0.5s ease" }} />
-        
+
         {isDemoData && (
           <div style={{ position: "absolute", top: "12px", right: "12px", background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", padding: "6px 12px", borderRadius: "20px", display: "flex", alignItems: "center", gap: "6px", border: "1px solid rgba(255,255,255,0.1)" }}>
             <AlertTriangle size={14} color="#f59e0b" />
-            <span style={{ fontSize: "0.75rem", color: "#f0f4f8", fontWeight: 600 }}>Demo Visualization</span>
+            <span style={{ fontSize: "0.75rem", color: "#f0f4f8", fontWeight: 600 }}>{t("heatmap.demoLabel")}</span>
           </div>
         )}
       </div>
-      
+
       <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginTop: "12px", lineHeight: 1.5 }}>
-        {isDemoData 
-          ? "This heatmap is randomly generated for demonstration purposes. A real Grad-CAM heatmap highlights the regions of the image that most influenced the AI's prediction."
-          : "Heatmap highlights regions of the image that most influenced the AI's prediction. Red areas indicate highest importance."}
+        {isDemoData ? t("heatmap.demoText") : t("heatmap.realText")}
       </p>
     </div>
   );

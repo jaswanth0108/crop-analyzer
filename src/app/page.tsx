@@ -15,6 +15,7 @@ import {
   AlertTriangle,
   ChevronRight,
 } from "lucide-react";
+import { useTranslation } from "@/lib/i18n/useTranslation";
 
 /* ── Particle background ─────────────────────────────────── */
 function ParticleCanvas() {
@@ -96,6 +97,7 @@ function ParticleCanvas() {
 /* ── Animated scan preview ────────────────────────────────── */
 function ScanPreview() {
   const [scanPos, setScanPos] = useState(0);
+  const { t } = useTranslation();
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -205,7 +207,7 @@ function ScanPreview() {
           }}
         />
         <span style={{ fontSize: "0.75rem", color: "#10b981", fontWeight: 600 }}>
-          Scanning...
+          {t("analyze.checkingQuality")}
         </span>
       </div>
     </div>
@@ -363,6 +365,7 @@ function CropCard({
 /* ── Main Page ────────────────────────────────────────────── */
 export default function HomePage() {
   const heroRef = useRef<HTMLDivElement>(null);
+  const { t } = useTranslation();
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg-base)" }}>
@@ -431,7 +434,7 @@ export default function HomePage() {
                 }}
               />
               <span style={{ fontSize: "0.8rem", color: "#10b981", fontWeight: 600, letterSpacing: "0.03em" }}>
-                Demo Mode Active — Hackathon Build 2026
+                {t("home.badge")}
               </span>
             </div>
 
@@ -445,9 +448,9 @@ export default function HomePage() {
                 animation: "fade-in-up 0.5s ease 0.1s both",
               }}
             >
-              Detect Crop Diseases{" "}
-              <span className="gradient-text">Instantly</span>{" "}
-              with AI
+              {t("home.heroTitle1")}{" "}
+              <span className="gradient-text">{t("home.heroTitleHighlight")}</span>{" "}
+              {t("home.heroTitle2")}
             </h1>
 
             <p
@@ -460,9 +463,7 @@ export default function HomePage() {
                 animation: "fade-in-up 0.5s ease 0.2s both",
               }}
             >
-              Upload a leaf image and AgriShield will detect diseases in Rice, Tomato,
-              and Potato crops — with severity estimation, treatment recommendations,
-              and full transparency about what the AI can and cannot do.
+              {t("home.heroSubtitle")}
             </p>
 
             <div
@@ -475,12 +476,12 @@ export default function HomePage() {
             >
               <Link href="/analyze" className="btn-primary" style={{ fontSize: "1rem", padding: "14px 32px" }}>
                 <Upload size={18} />
-                Analyze a Crop
+                {t("home.ctaAnalyze")}
                 <ArrowRight size={16} />
               </Link>
               <Link href="/supported-crops" className="btn-secondary" style={{ fontSize: "1rem", padding: "13px 28px" }}>
                 <BookOpen size={16} />
-                Supported Crops
+                {t("home.ctaSupported")}
               </Link>
             </div>
 
@@ -495,9 +496,9 @@ export default function HomePage() {
               }}
             >
               {[
-                { value: "3", label: "Crops Supported" },
-                { value: "13", label: "Conditions Detected" },
-                { value: "100%", label: "Transparent Data" },
+                { value: "3", label: t("home.stat1") },
+                { value: "13", label: t("home.stat2") },
+                { value: "100%", label: t("home.stat3") },
               ].map((stat) => (
                 <div key={stat.label}>
                   <div
@@ -536,7 +537,7 @@ export default function HomePage() {
           }}
         >
           <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", letterSpacing: "0.1em" }}>
-            SCROLL
+            {t("home.scrollLabel")}
           </span>
           <div
             style={{
@@ -556,11 +557,11 @@ export default function HomePage() {
               className="font-display"
               style={{ fontSize: "clamp(1.8rem, 3vw, 2.6rem)", fontWeight: 800, marginBottom: "14px" }}
             >
-              Everything you need for{" "}
-              <span className="gradient-text">smart crop protection</span>
+              {t("home.featuresTitle1")}{" "}
+              <span className="gradient-text">{t("home.featuresTitleHighlight")}</span>
             </h2>
             <p style={{ color: "var(--text-secondary)", fontSize: "1.05rem", maxWidth: "520px", margin: "0 auto" }}>
-              Built for real-world agricultural conditions, with transparency at every step.
+              {t("home.featuresSubtitle")}
             </p>
           </div>
 
@@ -571,48 +572,12 @@ export default function HomePage() {
               gap: "20px",
             }}
           >
-            <FeatureCard
-              icon={Upload}
-              title="Upload or Capture"
-              description="Drag-and-drop any leaf image or use your device camera directly. Supports JPEG, PNG, and WebP up to 10 MB."
-              color="#10b981"
-              delay={0}
-            />
-            <FeatureCard
-              icon={Zap}
-              title="Instant AI Detection"
-              description="Our classifier identifies crop conditions across 13 supported disease states in seconds, with confidence scoring."
-              color="#84cc16"
-              delay={80}
-            />
-            <FeatureCard
-              icon={Eye}
-              title="Grad-CAM Heatmaps"
-              description="Visual explanations showing which regions of the leaf influenced the AI decision (demo visualization in mock mode)."
-              color="#3b82f6"
-              delay={160}
-            />
-            <FeatureCard
-              icon={BarChart2}
-              title="Severity Estimation"
-              description="Rice diseases include lesion-pixel-based severity from Healthy to Critical. Tomato and Potato show condition only."
-              color="#f59e0b"
-              delay={240}
-            />
-            <FeatureCard
-              icon={ShieldCheck}
-              title="Safe Recommendations"
-              description="Severity-aware treatment guidance with agronomist disclaimers. We never suggest treatments outside our knowledge."
-              color="#10b981"
-              delay={320}
-            />
-            <FeatureCard
-              icon={Database}
-              title="Transparent Datasets"
-              description="Full disclosure of every dataset used — Paddy Doctor, PlantVillage, PlantDoc, and more. No hidden data sources."
-              color="#a855f7"
-              delay={400}
-            />
+            <FeatureCard icon={Upload}     title={t("features.uploadTitle")}    description={t("features.uploadDesc")}    color="#10b981" delay={0} />
+            <FeatureCard icon={Zap}        title={t("features.aiTitle")}        description={t("features.aiDesc")}        color="#84cc16" delay={80} />
+            <FeatureCard icon={Eye}        title={t("features.heatmapTitle")}   description={t("features.heatmapDesc")}   color="#3b82f6" delay={160} />
+            <FeatureCard icon={BarChart2}  title={t("features.severityTitle")}  description={t("features.severityDesc")}  color="#f59e0b" delay={240} />
+            <FeatureCard icon={ShieldCheck} title={t("features.recommendTitle")} description={t("features.recommendDesc")} color="#10b981" delay={320} />
+            <FeatureCard icon={Database}   title={t("features.datasetsTitle")}  description={t("features.datasetsDesc")}  color="#a855f7" delay={400} />
           </div>
         </div>
       </section>
@@ -634,8 +599,8 @@ export default function HomePage() {
               className="font-display"
               style={{ fontSize: "clamp(1.6rem, 2.5vw, 2.2rem)", fontWeight: 800 }}
             >
-              Supported Crops &{" "}
-              <span className="gradient-text">Conditions</span>
+              {t("home.cropsTitle1")}{" "}
+              <span className="gradient-text">{t("home.cropsTitleHighlight")}</span>
             </h2>
             <Link
               href="/supported-crops"
@@ -649,7 +614,7 @@ export default function HomePage() {
                 fontWeight: 600,
               }}
             >
-              View all <ChevronRight size={16} />
+              {t("home.cropsViewAll")} <ChevronRight size={16} />
             </Link>
           </div>
 
@@ -662,21 +627,21 @@ export default function HomePage() {
           >
             <CropCard
               emoji="🌾"
-              name="Rice / Paddy"
+              name={t("crops.rice")}
               color="#10b981"
               delay={0}
               conditions={["Healthy", "Bacterial Leaf Blight", "Brown Spot", "Leaf Blast", "Sheath Blight"]}
             />
             <CropCard
               emoji="🍅"
-              name="Tomato"
+              name={t("crops.tomato")}
               color="#ef4444"
               delay={100}
               conditions={["Healthy", "Early Blight", "Late Blight", "Bacterial Spot", "Leaf Mold"]}
             />
             <CropCard
               emoji="🥔"
-              name="Potato"
+              name={t("crops.potato")}
               color="#f59e0b"
               delay={200}
               conditions={["Healthy", "Early Blight", "Late Blight"]}
@@ -702,12 +667,10 @@ export default function HomePage() {
             <AlertTriangle size={20} color="#f59e0b" style={{ flexShrink: 0, marginTop: "2px" }} />
             <div>
               <p style={{ color: "#f59e0b", fontWeight: 600, fontSize: "0.9rem", marginBottom: "4px" }}>
-                Important Disclaimer
+                {t("home.disclaimerTitle")}
               </p>
               <p style={{ color: "#8fa3bf", fontSize: "0.875rem", lineHeight: 1.6 }}>
-                AgriShield provides AI-assisted crop health analysis. Results may be incorrect and should be
-                confirmed by a qualified agricultural expert before treatment decisions. Mock mode results
-                are randomly generated for demonstration only and do not reflect real model inference.
+                {t("home.disclaimerText")}
               </p>
             </div>
           </div>
@@ -739,21 +702,20 @@ export default function HomePage() {
             className="font-display"
             style={{ fontSize: "clamp(1.8rem, 3vw, 2.8rem)", fontWeight: 900, marginBottom: "16px" }}
           >
-            Ready to analyze your first crop?
+            {t("home.ctaTitle")}
           </h2>
           <p style={{ color: "var(--text-secondary)", fontSize: "1.05rem", marginBottom: "36px", maxWidth: "480px", margin: "0 auto 36px" }}>
-            Upload a leaf image and get instant AI-assisted disease detection with
-            recommendations in seconds.
+            {t("home.ctaSubtitle")}
           </p>
           <div style={{ display: "flex", gap: "14px", justifyContent: "center", flexWrap: "wrap" }}>
             <Link href="/analyze" className="btn-primary" style={{ fontSize: "1rem", padding: "14px 36px" }}>
               <Upload size={18} />
-              Start Analyzing
+              {t("home.ctaStart")}
               <ArrowRight size={16} />
             </Link>
             <Link href="/datasets" className="btn-secondary" style={{ fontSize: "1rem", padding: "13px 28px" }}>
               <Database size={16} />
-              View Datasets
+              {t("home.ctaDatasets")}
             </Link>
           </div>
 
@@ -768,10 +730,10 @@ export default function HomePage() {
             }}
           >
             {[
-              "Free to use",
-              "No account required",
-              "Results in seconds",
-              "Fully transparent",
+              t("home.checkFree"),
+              t("home.checkNoAccount"),
+              t("home.checkFast"),
+              t("home.checkTransparent"),
             ].map((item) => (
               <div key={item} style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--text-secondary)", fontSize: "0.875rem" }}>
                 <CheckCircle2 size={15} color="#10b981" />
@@ -799,12 +761,12 @@ export default function HomePage() {
               </span>
             </div>
             <p style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
-              Built for the 2026 Hackathon · Demo Mode · Not for commercial use
+              {t("home.footerBuilt")}
             </p>
             <div style={{ display: "flex", gap: "20px" }}>
               {[
-                { href: "/datasets", label: "Datasets" },
-                { href: "/supported-crops", label: "Supported Crops" },
+                { href: "/datasets", label: t("home.footerDatasets") },
+                { href: "/supported-crops", label: t("home.footerCrops") },
               ].map((l) => (
                 <Link key={l.href} href={l.href} style={{ color: "var(--text-muted)", fontSize: "0.8rem", textDecoration: "none" }}>
                   {l.label}

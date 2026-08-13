@@ -3,32 +3,40 @@
 import { CheckCircle2, AlertTriangle, XCircle, HelpCircle, ChevronRight, Activity } from "lucide-react";
 import type { HistoryEntry, ConfidenceLevel } from "@/types/analysis";
 import { getSpeciesEmoji } from "@/lib/supported-conditions";
+import { useTranslation } from "@/lib/i18n/useTranslation";
 
 interface Props {
   entry: HistoryEntry;
   onClick: (id: string) => void;
 }
 
-const CONFIDENCE_CONFIG: Record<
-  ConfidenceLevel,
-  { icon: React.ElementType; color: string }
-> = {
-  high: { icon: CheckCircle2, color: "#10b981" },
-  medium: { icon: Activity, color: "#3b82f6" },
-  low: { icon: AlertTriangle, color: "#f59e0b" },
-  unreliable: { icon: XCircle, color: "#ef4444" },
-  unsupported: { icon: HelpCircle, color: "#9ca3af" },
+const CONFIDENCE_ICON_MAP: Record<ConfidenceLevel, React.ElementType> = {
+  high:        CheckCircle2,
+  medium:      Activity,
+  low:         AlertTriangle,
+  unreliable:  XCircle,
+  unsupported: HelpCircle,
+};
+
+const CONFIDENCE_COLORS: Record<ConfidenceLevel, string> = {
+  high:        "#10b981",
+  medium:      "#3b82f6",
+  low:         "#f59e0b",
+  unreliable:  "#ef4444",
+  unsupported: "#9ca3af",
 };
 
 export default function HistoryCard({ entry, onClick }: Props) {
   const { result, thumbnailUrl } = entry;
-  const conf = CONFIDENCE_CONFIG[result.confidenceLevel];
-  const ConfIcon = conf.icon;
-  
+  const { t } = useTranslation();
+
+  const ConfIcon = CONFIDENCE_ICON_MAP[result.confidenceLevel];
+  const confColor = CONFIDENCE_COLORS[result.confidenceLevel];
+
   const date = new Date(result.analysedAt);
   const timeStr = date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
   const dateStr = date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-  
+
   const cropEmoji = result.crop ? getSpeciesEmoji(result.crop) : "🌱";
   const cropColor = "#10b981";
 
@@ -87,17 +95,17 @@ export default function HistoryCard({ entry, onClick }: Props) {
             {dateStr} • {timeStr}
           </span>
         </div>
-        
+
         <h4 style={{ fontSize: "1rem", fontWeight: 700, color: "var(--text-primary)", margin: "0 0 6px 0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
           {result.conditionDisplay}
         </h4>
-        
+
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "4px", color: conf.color, fontSize: "0.8rem", fontWeight: 600 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "4px", color: confColor, fontSize: "0.8rem", fontWeight: 600 }}>
             <ConfIcon size={14} />
             {Math.round(result.confidence * 100)}%
           </div>
-          
+
           {result.severityPercentage !== null && (
             <div style={{ display: "flex", alignItems: "center", gap: "4px", color: "var(--text-secondary)", fontSize: "0.8rem", fontWeight: 500 }}>
               <Activity size={14} />
@@ -106,9 +114,9 @@ export default function HistoryCard({ entry, onClick }: Props) {
           )}
         </div>
       </div>
-      
+
       <ChevronRight size={20} color="var(--text-muted)" style={{ flexShrink: 0 }} />
-      
+
       {/* Demo indicator */}
       {result.isDemoData && (
         <div
@@ -125,6 +133,7 @@ export default function HistoryCard({ entry, onClick }: Props) {
             letterSpacing: "0.05em",
           }}
         >
+          {/* Keep "DEMO" in uppercase English as a universal tech label */}
           DEMO
         </div>
       )}

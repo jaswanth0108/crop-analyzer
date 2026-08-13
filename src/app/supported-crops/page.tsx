@@ -1,14 +1,16 @@
+"use client";
+
 import { SUPPORTED_CONDITIONS, UNIQUE_SPECIES, getConditionsForSpecies } from "@/lib/supported-conditions";
 import { DATASET_TOTALS } from "@/app/datasets/data";
-import type { Metadata } from "next";
+import { useTranslation } from "@/lib/i18n/useTranslation";
 
-export const metadata: Metadata = {
-  title: "Supported Crops & Diseases — AgriShield",
-  description:
-    "Full list of 15 crop species and 48 disease conditions that AgriShield can detect, sourced from PlantVillage, PlantDoc, Paddy Doctor, and New Plant Diseases datasets.",
-};
+// Note: This page is now "use client" so it can access the language context.
+// The metadata export is removed (not allowed in client components);
+// page-level metadata for this route is set in a parent server component if needed.
 
 export default function SupportedCropsPage() {
+  const { t } = useTranslation();
+
   return (
     <div style={{ minHeight: "calc(100vh - 64px)", background: "var(--bg-base)", padding: "48px 0 80px" }}>
       <div className="section-container" style={{ maxWidth: "1100px" }}>
@@ -31,16 +33,29 @@ export default function SupportedCropsPage() {
             }}
           >
             <span>🌿</span>
-            <span>Dataset-driven Coverage</span>
+            <span>{t("supportedCrops.badge")}</span>
           </div>
           <h1
             className="font-display"
             style={{ fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 900, marginBottom: "16px" }}
           >
-            <span className="gradient-text">Supported</span> Crops & Diseases
+            <span className="gradient-text">{t("supportedCrops.title1")}</span>{" "}
+            {t("supportedCrops.titleHighlight")}
           </h1>
           <p style={{ color: "var(--text-secondary)", fontSize: "1.05rem", maxWidth: "640px", margin: "0 auto" }}>
-            AgriShield is trained on <strong style={{ color: "var(--text-primary)" }}>{DATASET_TOTALS.totalImages.toLocaleString()} images</strong> across <strong style={{ color: "var(--text-primary)" }}>{DATASET_TOTALS.totalSpecies} crop species</strong> and <strong style={{ color: "var(--text-primary)" }}>{DATASET_TOTALS.totalClasses} disease conditions</strong> from 4 research datasets.
+            {t("supportedCrops.subtitlePart1")}{" "}
+            <strong style={{ color: "var(--text-primary)" }}>
+              {DATASET_TOTALS.totalImages.toLocaleString()} {t("supportedCrops.subtitleImages")}
+            </strong>{" "}
+            {t("supportedCrops.subtitlePart2")}{" "}
+            <strong style={{ color: "var(--text-primary)" }}>
+              {DATASET_TOTALS.totalSpecies} {t("supportedCrops.subtitleSpecies")}
+            </strong>{" "}
+            {t("supportedCrops.subtitlePart3")}{" "}
+            <strong style={{ color: "var(--text-primary)" }}>
+              {DATASET_TOTALS.totalClasses} {t("supportedCrops.subtitleClasses")}
+            </strong>{" "}
+            {t("supportedCrops.subtitlePart4")}
           </p>
         </div>
 
@@ -54,9 +69,9 @@ export default function SupportedCropsPage() {
           }}
         >
           {[
-            { label: "Crop Species", value: DATASET_TOTALS.totalSpecies, icon: "🌱" },
-            { label: "Disease Conditions", value: DATASET_TOTALS.totalClasses, icon: "🔬" },
-            { label: "Training Images", value: DATASET_TOTALS.totalImages.toLocaleString(), icon: "📸" },
+            { label: t("supportedCrops.statSpecies"),    value: DATASET_TOTALS.totalSpecies,             icon: "🌱" },
+            { label: t("supportedCrops.statConditions"), value: DATASET_TOTALS.totalClasses,             icon: "🔬" },
+            { label: t("supportedCrops.statImages"),     value: DATASET_TOTALS.totalImages.toLocaleString(), icon: "📸" },
           ].map((stat) => (
             <div
               key={stat.label}
@@ -77,7 +92,7 @@ export default function SupportedCropsPage() {
 
         {/* Per-species breakdown */}
         <h2 className="font-display" style={{ fontSize: "1.4rem", fontWeight: 800, marginBottom: "24px" }}>
-          Crop-by-Crop Breakdown
+          {t("supportedCrops.breakdown")}
         </h2>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -119,7 +134,9 @@ export default function SupportedCropsPage() {
                     <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "var(--text-primary)" }}>
                       {diseases.length}
                     </div>
-                    <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>diseases</div>
+                    <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                      {t("supportedCrops.diseases")}
+                    </div>
                   </div>
                 </div>
 
@@ -145,6 +162,7 @@ export default function SupportedCropsPage() {
                       }}
                     >
                       <span>{cond.isHealthy ? "✅" : "🔴"}</span>
+                      {/* conditionDisplay is kept in English (disease name accuracy) */}
                       <span>{cond.conditionDisplay}</span>
                     </div>
                   ))}
@@ -165,9 +183,9 @@ export default function SupportedCropsPage() {
           }}
         >
           <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", lineHeight: 1.7, margin: 0 }}>
-            ⚠️ <strong style={{ color: "#f59e0b" }}>Important:</strong> AgriShield&apos;s detection is based on the visual patterns found in its training datasets. Accuracy may be lower for
-            crops not well-represented in the training data, field images with complex backgrounds, or rare disease variants not present in the datasets.
-            Always confirm AI results with a qualified agronomist before making treatment decisions.
+            ⚠️{" "}
+            <strong style={{ color: "#f59e0b" }}>{t("supportedCrops.footerImportant")}</strong>{" "}
+            {t("supportedCrops.footerNote")}
           </p>
         </div>
       </div>

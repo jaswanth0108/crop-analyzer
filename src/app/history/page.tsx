@@ -11,8 +11,10 @@ import ResultCard from "@/components/analysis/ResultCard";
 import SeverityPanel from "@/components/analysis/SeverityPanel";
 import RecommendationPanel from "@/components/analysis/RecommendationPanel";
 import DisclaimerBanner from "@/components/analysis/DisclaimerBanner";
+import { useTranslation } from "@/lib/i18n/useTranslation";
 
 export default function HistoryPage() {
+  const { t } = useTranslation();
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [selectedEntry, setSelectedEntry] = useState<HistoryEntry | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -23,34 +25,34 @@ export default function HistoryPage() {
   }, []);
 
   const handleClear = () => {
-    if (confirm("Are you sure you want to clear your entire scan history?")) {
+    if (confirm(t("history.clearConfirm"))) {
       clearHistory();
       setHistory([]);
       setSelectedEntry(null);
     }
   };
 
-  if (!mounted) return null; // Avoid hydration mismatch
+  if (!mounted) return null;
 
   return (
     <div style={{ minHeight: "calc(100vh - 64px)", background: "var(--bg-base)", padding: "48px 0 80px" }}>
       <div className="section-container" style={{ maxWidth: "1000px" }}>
-        
+
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "40px", flexWrap: "wrap", gap: "16px" }}>
           <div>
             <h1 className="font-display" style={{ fontSize: "clamp(1.8rem, 3vw, 2.5rem)", fontWeight: 900, marginBottom: "8px" }}>
-              Scan <span className="gradient-text">History</span>
+              {t("history.title")} <span className="gradient-text">{t("history.titleHighlight")}</span>
             </h1>
             <p style={{ color: "var(--text-secondary)", fontSize: "1rem" }}>
-              Review your past crop analyses and track confidence trends
+              {t("history.subtitle")}
             </p>
           </div>
-          
+
           {history.length > 0 && !selectedEntry && (
             <button onClick={handleClear} className="btn-ghost" style={{ color: "#ef4444" }}>
               <Trash2 size={16} />
-              Clear History
+              {t("history.clearHistory")}
             </button>
           )}
         </div>
@@ -64,21 +66,21 @@ export default function HistoryPage() {
               style={{ marginBottom: "24px" }}
             >
               <ArrowLeft size={16} />
-              Back to History List
+              {t("history.backToList")}
             </button>
-            
+
             <ResultCard result={selectedEntry.result} imageUrl={selectedEntry.thumbnailUrl} />
-            
+
             <div style={{ marginTop: "20px" }}>
               <SeverityPanel result={selectedEntry.result} />
             </div>
-            
+
             {selectedEntry.result.recommendations.length > 0 && (
               <div style={{ marginTop: "20px" }}>
                 <RecommendationPanel recommendations={selectedEntry.result.recommendations} />
               </div>
             )}
-            
+
             <div style={{ marginTop: "20px" }}>
               <DisclaimerBanner />
             </div>
@@ -102,13 +104,13 @@ export default function HistoryPage() {
                   <BarChart2 size={32} color="#10b981" />
                 </div>
                 <h3 className="font-display" style={{ fontSize: "1.2rem", fontWeight: 700, marginBottom: "8px" }}>
-                  No history yet
+                  {t("history.noHistoryTitle")}
                 </h3>
                 <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem", marginBottom: "24px" }}>
-                  Your past crop scans will appear here. They are saved securely in your browser.
+                  {t("history.noHistoryText")}
                 </p>
                 <Link href="/analyze" className="btn-primary">
-                  Analyze a Crop
+                  {t("history.analyzeNow")}
                 </Link>
               </div>
             ) : (
@@ -117,11 +119,11 @@ export default function HistoryPage() {
                 <div style={{ animation: "fade-in-up 0.4s ease both" }}>
                   <TrendChart history={history} />
                 </div>
-                
+
                 {/* History List */}
                 <div>
                   <h3 style={{ fontSize: "1.2rem", fontWeight: 700, color: "var(--text-primary)", marginBottom: "16px" }}>
-                    Recent Scans
+                    {t("history.recentScans")}
                   </h3>
                   <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                     {history.map((entry, idx) => (

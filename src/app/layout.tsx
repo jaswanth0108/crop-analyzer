@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+import { LanguageProvider } from "@/lib/i18n/LanguageContext";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -36,8 +37,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${outfit.variable}`}>
       <body>
-        <Navbar />
-        <main style={{ paddingTop: "64px" }}>{children}</main>
+        <LanguageProvider>
+          <Navbar />
+          <main style={{ paddingTop: "64px" }}>{children}</main>
+        </LanguageProvider>
       </body>
     </html>
   );
